@@ -1,0 +1,402 @@
+# ===================================
+# Python / Django
+# ===================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Django stuff
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff
+instance/
+.webassets-cache
+
+# Scrapy stuff
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+backend/venv/
+backend/.env
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# ===================================
+# Node / React
+# ===================================
+
+# Dependencies
+node_modules/
+/.pnp
+.pnp.js
+
+# Testing
+/coverage
+
+# Production
+/build
+frontend/build/
+
+# Misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Package manager locks (optional - uncomment if you want to ignore)
+# package-lock.json
+# yarn.lock
+
+# ===================================
+# Database
+# ===================================
+
+# PostgreSQL
+*.sql
+*.dump
+*.backup
+
+# SQLite
+*.db
+*.sqlite
+*.sqlite3
+
+# Database backup files
+backup/
+backups/
+*.bak
+
+# ===================================
+# IDEs & Editors
+# ===================================
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# Eclipse
+.project
+.classpath
+.settings/
+
+# NetBeans
+nbproject/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# ===================================
+# OS Files
+# ===================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ===================================
+# AWS / Cloud
+# ===================================
+
+# AWS credentials
+.aws/
+*.pem
+*.key
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+
+# ===================================
+# Logs & Temporary Files
+# ===================================
+
+# Log files
+*.log
+logs/
+*.log.*
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Cache
+.cache/
+*.cache
+
+# ===================================
+# Security & Secrets
+# ===================================
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Secret keys
+secrets/
+*.secret
+*.secrets
+secret.json
+secrets.json
+
+# SSL certificates
+*.crt
+*.cer
+*.der
+*.pem
+*.key
+*.p12
+*.pfx
+
+# API keys
+api_keys.txt
+credentials.json
+
+# ===================================
+# Media & Static Files (Optional)
+# ===================================
+
+# Uncomment if you want to ignore uploaded media
+# media/
+# uploads/
+
+# Static files (uncomment if using collectstatic)
+# staticfiles/
+# static_root/
+
+# ===================================
+# Documentation & Reports
+# ===================================
+
+# Generated documentation
+# docs/_build/
+# docs/.doctrees/
+
+# Reports
+reports/
+*.report
+
+# ===================================
+# Misc
+# ===================================
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Compressed files (optional)
+# *.zip
+# *.tar
+# *.tar.gz
+# *.rar
+
+# System files
+.fseventsd/
+.DocumentRevisions-V100/
+.TemporaryItems/
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Thumbnails
+._*
+
+# Files that might appear in the root
+.htaccess
+
+# Redis dump
+dump.rdb
+
+# Migration files (CAUTION: Usually you want to commit these!)
+# Uncomment ONLY if you regenerate migrations from models
+# */migrations/*.py
+# !*/migrations/__init__.py
+
+# ===================================
+# Project Specific
+# ===================================
+
+# PostgreSQL setup scripts output
+setup_postgresql.log
+
+# Local development files
+local/
+.local/
+
+# VS Code workspace files
+*.code-workspace
+
+# Test files and fixtures
+fixtures/
+test_data/
+
+# Celery
+celerybeat-schedule.*
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# Jupyter notebooks (if used for development)
+*.ipynb
+
+# Draft/notes files
+NOTES.md
+DRAFT.md
+TODO_local.md

@@ -1,0 +1,55 @@
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Amplify } from 'aws-amplify';
+import './App.css';
+
+// Pages
+import HomePage from './pages/HomePage';
+import GamePage from './pages/GamePage';
+import LeaderboardPage from './pages/LeaderboardPage';
+import ProfilePage from './pages/ProfilePage';
+import LoginPage from './pages/LoginPage';
+
+// Components
+import Navbar from './components/Navbar';
+import PrivateRoute from './components/PrivateRoute';
+
+// AWS Amplify Configuration (replace with your Cognito details)
+Amplify.configure({
+  Auth: {
+    Cognito: {
+      region: process.env.REACT_APP_AWS_REGION || 'us-east-1',
+      userPoolId: process.env.REACT_APP_USER_POOL_ID || 'your-user-pool-id',
+      userPoolClientId: process.env.REACT_APP_USER_POOL_CLIENT_ID || 'your-client-id',
+      identityPoolId: process.env.REACT_APP_IDENTITY_POOL_ID || 'your-identity-pool-id',
+      loginWith: {
+        oauth: {
+          domain: process.env.REACT_APP_OAUTH_DOMAIN || 'your-domain.auth.us-east-1.amazoncognito.com',
+          scopes: ['email', 'openid', 'profile'],
+          redirectSignIn: [process.env.REACT_APP_REDIRECT_SIGN_IN || 'http://localhost:3000/'],
+          redirectSignOut: [process.env.REACT_APP_REDIRECT_SIGN_OUT || 'http://localhost:3000/'],
+          responseType: 'code',
+        },
+      },
+    },
+  },
+});
+
+function App() {
+  return (
+    <Router>
+      <div className="App">
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/game/:mode" element={<PrivateRoute><GamePage /></PrivateRoute>} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+        </Routes>
+      </div>
+    </Router>
+  );
+}
+
+export default App;

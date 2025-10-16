@@ -1,0 +1,96 @@
+.game-page {
+  min-height: calc(100vh - 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+.game-header {
+  text-align: center;
+  background: white;
+  padding: 30px 50px;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.game-header h1 {
+  font-size: 2.5rem;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.game-mode {
+  font-size: 1.2rem;
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.game-status {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #667eea;
+  padding: 10px 20px;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.game-status.game-over {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  font-size: 1.5rem;
+  animation: celebrate 0.5s ease;
+}
+
+@keyframes celebrate {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.waiting-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 40px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.waiting-container p {
+  font-size: 1.2rem;
+  color: #666;
+}
+
+.game-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.game-actions .btn {
+  padding: 15px 40px;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .game-header {
+    padding: 20px 30px;
+  }
+
+  .game-header h1 {
+    font-size: 2rem;
+  }
+
+  .game-mode, .game-status {
+    font-size: 1rem;
+  }
+}

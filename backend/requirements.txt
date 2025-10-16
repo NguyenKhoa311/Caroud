@@ -1,0 +1,38 @@
+# Django Core
+Django==4.2.7
+djangorestframework==3.14.0
+django-cors-headers==4.3.0
+
+# WebSocket Support
+channels==4.0.0
+channels-redis==4.1.0
+daphne==4.0.0
+
+# PostgreSQL
+psycopg2-binary==2.9.9
+
+# AWS SDK
+boto3==1.29.7
+botocore==1.32.7
+
+# Authentication & JWT
+PyJWT==2.8.0
+python-jose[cryptography]==3.3.0
+python-dotenv==1.0.0
+
+# CORS & Security
+django-environ==0.11.2
+
+# API Documentation
+drf-yasg==1.21.7
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2023.3
+
+# Redis for caching and channels
+redis==5.0.1
+
+# Testing
+pytest==7.4.3
+pytest-django==4.7.0
