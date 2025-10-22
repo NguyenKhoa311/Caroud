@@ -1,32 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { getCurrentUser, signOut } from 'aws-amplify/auth';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { signOut } from 'aws-amplify/auth';
+import { useAuth, clearAuthData } from '../utils/auth';
 import './Navbar.css';
 
 function Navbar() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    checkUser();
-  }, []);
-
-  const checkUser = async () => {
-    try {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-    } catch (error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     try {
-      await signOut();
-      setUser(null);
-      window.location.href = '/';
+      if (user?.authType === 'token') {
+        // Token-based logout (email/password)
+        clearAuthData();
+        navigate('/');
+      } else {
+        // Cognito logout (social login)
+        await signOut();
+        clearAuthData();
+        navigate('/');
+      }
     } catch (error) {
       console.error('Error signing out:', error);
     }
@@ -54,8 +47,11 @@ function Navbar() {
                   <li className="navbar-item">
                     <Link to="/profile" className="navbar-link">Profile</Link>
                   </li>
+                  <li className="navbar-item navbar-user">
+                    <span className="navbar-username">👤 {user.username}</span>
+                  </li>
                   <li className="navbar-item">
-                    <button onClick={handleSignOut} className="navbar-btn">
+                    <button onClick={handleSignOut} className="navbar-btn navbar-btn-logout">
                       Sign Out
                     </button>
                   </li>

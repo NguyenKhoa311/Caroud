@@ -1,62 +1,96 @@
 import React, { useState, useEffect } from 'react';
-import { getCurrentUser } from 'aws-amplify/auth';
-import { userService } from '../services/userService';
+import axios from 'axios';
+import { useAuth, getAuthToken } from '../utils/auth';
 import './ProfilePage.css';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
+
 function ProfilePage() {
-  const [user, setUser] = useState(null);
+  const { user: authUser, loading: authLoading } = useAuth();
   const [stats, setStats] = useState(null);
   const [matchHistory, setMatchHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchUserData();
-  }, []);
+    if (authUser && !authLoading) {
+      fetchUserData();
+    }
+  }, [authUser, authLoading]);
 
   const fetchUserData = async () => {
     try {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
+      const token = getAuthToken();
+      if (!token) {
+        setError('Not authenticated');
+        setLoading(false);
+        return;
+      }
 
-      // TODO: Replace with actual API calls
-      // const userStats = await userService.getUserStats(currentUser.userId);
-      // const history = await userService.getMatchHistory(currentUser.userId);
+      const userData = authUser;
+      
+      // Fetch user stats from API
+      try {
+        const statsResponse = await axios.get(
+          `${API_URL}/api/users/${userData.id}/stats/`,
+          {
+            headers: { Authorization: `Token ${token}` }
+          }
+        );
+        setStats(statsResponse.data);
+      } catch (err) {
+        console.error('Error fetching stats:', err);
+        // Use default stats if API fails
+        setStats({
+          elo_rating: userData.elo_rating || 1200,
+          rank: '---',
+          total_games: userData.total_games || 0,
+          wins: userData.wins || 0,
+          losses: userData.losses || 0,
+          win_rate: userData.win_rate || 0,
+          current_streak: userData.current_streak || 0,
+          best_streak: userData.best_streak || 0,
+        });
+      }
 
-      // Mock data
-      const mockStats = {
-        elo: 1650,
-        rank: 8,
-        totalGames: 97,
-        wins: 52,
-        losses: 45,
-        winRate: 53.6,
-        currentStreak: 3,
-        bestStreak: 8,
-      };
+      // Fetch match history
+      try {
+        const historyResponse = await axios.get(
+          `${API_URL}/api/users/${userData.id}/matches/?limit=10`,
+          {
+            headers: { Authorization: `Token ${token}` }
+          }
+        );
+        setMatchHistory(historyResponse.data || []);
+      } catch (err) {
+        console.error('Error fetching match history:', err);
+        setMatchHistory([]);
+      }
 
-      const mockHistory = [
-        { id: 1, date: '2025-10-15', opponent: 'GrandMaster', result: 'win', eloChange: +15 },
-        { id: 2, date: '2025-10-14', opponent: 'CaroPro', result: 'win', eloChange: +18 },
-        { id: 3, date: '2025-10-14', opponent: 'BoardMaster', result: 'win', eloChange: +12 },
-        { id: 4, date: '2025-10-13', opponent: 'QuickThinker', result: 'loss', eloChange: -16 },
-        { id: 5, date: '2025-10-12', opponent: 'TacticalGenius', result: 'loss', eloChange: -14 },
-      ];
-
-      setStats(mockStats);
-      setMatchHistory(mockHistory);
     } catch (error) {
       console.error('Error fetching user data:', error);
+      setError('Failed to load profile data');
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="profile-page">
         <div className="loading-container">
           <div className="spinner"></div>
           <p>Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="profile-page">
+        <div className="error-container">
+          <p>{error}</p>
         </div>
       </div>
     );
@@ -71,8 +105,8 @@ function ProfilePage() {
             <span className="avatar-icon">👤</span>
           </div>
           <div className="profile-info">
-            <h1>{user?.username || 'Player'}</h1>
-            <p className="profile-email">{user?.signInDetails?.loginId || 'user@example.com'}</p>
+            <h1>{authUser?.username || 'Player'}</h1>
+            <p className="profile-email">{authUser?.email || 'user@example.com'}</p>
           </div>
         </div>
 
@@ -81,7 +115,7 @@ function ProfilePage() {
           <div className="stat-card highlight">
             <span className="stat-icon">🏆</span>
             <div className="stat-content">
-              <h3>{stats?.elo}</h3>
+              <h3>{stats?.elo_rating || 1200}</h3>
               <p>ELO Rating</p>
             </div>
           </div>
@@ -89,7 +123,7 @@ function ProfilePage() {
           <div className="stat-card">
             <span className="stat-icon">📊</span>
             <div className="stat-content">
-              <h3>#{stats?.rank}</h3>
+              <h3>#{stats?.rank || '---'}</h3>
               <p>Global Rank</p>
             </div>
           </div>
@@ -97,7 +131,7 @@ function ProfilePage() {
           <div className="stat-card">
             <span className="stat-icon">🎮</span>
             <div className="stat-content">
-              <h3>{stats?.totalGames}</h3>
+              <h3>{stats?.total_games || 0}</h3>
               <p>Total Games</p>
             </div>
           </div>
@@ -105,7 +139,7 @@ function ProfilePage() {
           <div className="stat-card">
             <span className="stat-icon">🔥</span>
             <div className="stat-content">
-              <h3>{stats?.currentStreak}</h3>
+              <h3>{stats?.current_streak || 0}</h3>
               <p>Win Streak</p>
             </div>
           </div>
@@ -117,19 +151,21 @@ function ProfilePage() {
           <div className="stats-grid">
             <div className="stat-item">
               <span className="stat-label">Wins:</span>
-              <span className="stat-value wins">{stats?.wins}</span>
+              <span className="stat-value wins">{stats?.wins || 0}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Losses:</span>
-              <span className="stat-value losses">{stats?.losses}</span>
+              <span className="stat-value losses">{stats?.losses || 0}</span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Win Rate:</span>
-              <span className="stat-value">{stats?.winRate.toFixed(1)}%</span>
+              <span className="stat-value">
+                {stats?.win_rate ? (stats.win_rate * 100).toFixed(1) : '0.0'}%
+              </span>
             </div>
             <div className="stat-item">
               <span className="stat-label">Best Streak:</span>
-              <span className="stat-value">{stats?.bestStreak}</span>
+              <span className="stat-value">{stats?.best_streak || 0}</span>
             </div>
           </div>
 
@@ -137,9 +173,11 @@ function ProfilePage() {
             <div className="winrate-bar-large">
               <div 
                 className="winrate-fill-large" 
-                style={{ width: `${stats?.winRate}%` }}
+                style={{ width: `${stats?.win_rate ? (stats.win_rate * 100) : 0}%` }}
               >
-                <span className="winrate-label">{stats?.winRate.toFixed(1)}%</span>
+                <span className="winrate-label">
+                  {stats?.win_rate ? (stats.win_rate * 100).toFixed(1) : '0.0'}%
+                </span>
               </div>
             </div>
           </div>
@@ -148,23 +186,38 @@ function ProfilePage() {
         {/* Match History */}
         <div className="match-history">
           <h2>Recent Matches</h2>
-          <div className="history-list">
-            {matchHistory.map((match) => (
-              <div key={match.id} className={`history-item ${match.result}`}>
-                <div className="match-date">{match.date}</div>
-                <div className="match-opponent">
-                  <span className="vs-label">vs</span>
-                  <strong>{match.opponent}</strong>
-                </div>
-                <div className={`match-result ${match.result}`}>
-                  {match.result === 'win' ? '✅ Won' : '❌ Lost'}
-                </div>
-                <div className={`elo-change ${match.eloChange > 0 ? 'positive' : 'negative'}`}>
-                  {match.eloChange > 0 ? '+' : ''}{match.eloChange}
-                </div>
-              </div>
-            ))}
-          </div>
+          {matchHistory.length > 0 ? (
+            <div className="history-list">
+              {matchHistory.map((match, index) => {
+                const isWinner = match.winner === authUser?.id;
+                const isDraw = match.winner === null;
+                const result = isDraw ? 'draw' : (isWinner ? 'win' : 'loss');
+                
+                return (
+                  <div key={match.id || index} className={`history-item ${result}`}>
+                    <div className="match-date">
+                      {new Date(match.created_at).toLocaleDateString()}
+                    </div>
+                    <div className="match-opponent">
+                      <span className="vs-label">vs</span>
+                      <strong>{match.opponent_username || 'Unknown'}</strong>
+                    </div>
+                    <div className={`match-result ${result}`}>
+                      {isDraw ? '⚖️ Draw' : isWinner ? '✅ Won' : '❌ Lost'}
+                    </div>
+                    <div className={`elo-change ${match.elo_change > 0 ? 'positive' : 'negative'}`}>
+                      {match.elo_change > 0 ? '+' : ''}{match.elo_change || 0}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="no-matches">
+              <p>No matches played yet</p>
+              <p className="no-matches-subtitle">Start playing to build your match history!</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

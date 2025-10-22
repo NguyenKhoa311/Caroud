@@ -79,6 +79,34 @@
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
 
+.navbar-btn-logout {
+  background: #e74c3c;
+  color: white;
+}
+
+.navbar-btn-logout:hover {
+  background: #c0392b;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+.navbar-user {
+  display: flex;
+  align-items: center;
+}
+
+.navbar-username {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .navbar-container {

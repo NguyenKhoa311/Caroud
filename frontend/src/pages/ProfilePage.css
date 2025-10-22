@@ -294,3 +294,39 @@
     text-align: center;
   }
 }
+
+/* Error State */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 20px;
+}
+
+.error-container p {
+  color: #e74c3c;
+  font-size: 1.2rem;
+}
+
+/* No Matches State */
+.no-matches {
+  background: white;
+  border-radius: 12px;
+  padding: 3rem;
+  text-align: center;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-top: 2rem;
+}
+
+.no-matches p {
+  color: #666;
+  margin: 0.5rem 0;
+  font-size: 1.1rem;
+}
+
+.no-matches-subtitle {
+  font-size: 0.95rem;
+  color: #999;
+}

@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     
     # Third party apps
     'rest_framework',
+    'rest_framework.authtoken',  # Add token authentication
     'corsheaders',
     'channels',
     'drf_yasg',
@@ -130,7 +131,8 @@ CORS_ALLOW_CREDENTIALS = True
 # REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'users.authentication.CognitoAuthentication',
+        'rest_framework.authentication.TokenAuthentication',  # Token auth for email/password
+        'users.authentication.CognitoAuthentication',  # Cognito auth for social login
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticatedOrReadOnly',

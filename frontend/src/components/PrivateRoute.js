@@ -1,25 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { useAuth } from '../utils/auth';
 
 function PrivateRoute({ children }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      await getCurrentUser();
-      setIsAuthenticated(true);
-    } catch {
-      setIsAuthenticated(false);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { user, loading } = useAuth();
 
   if (loading) {
     return (
@@ -27,14 +11,16 @@ function PrivateRoute({ children }) {
         display: 'flex', 
         justifyContent: 'center', 
         alignItems: 'center', 
-        height: '100vh' 
+        height: '100vh',
+        fontSize: '18px',
+        color: '#667eea'
       }}>
-        <div className="spinner"></div>
+        <div>Loading...</div>
       </div>
     );
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  return user ? children : <Navigate to="/login" />;
 }
 
 export default PrivateRoute;
