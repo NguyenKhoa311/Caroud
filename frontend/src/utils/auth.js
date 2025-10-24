@@ -1,17 +1,91 @@
+/**
+ * Authentication Utility Module
+ * 
+ * Provides centralized authentication state management for the entire app.
+ * Uses session-based storage (cleared when browser/tab closes) for security.
+ * 
+ * Features:
+ * - Custom useAuth() hook for components to access auth state
+ * - Event-based synchronization across components
+ * - Automatic logout on browser close (sessionStorage)
+ * - Support for both Token auth (email/password) and Cognito (social login)
+ * 
+ * Usage:
+ *   import { useAuth, setAuthData, clearAuthData } from './utils/auth';
+ *   
+ *   function MyComponent() {
+ *     const { user, loading } = useAuth();
+ *     if (loading) return <div>Loading...</div>;
+ *     if (user) return <div>Hello {user.username}</div>;
+ *   }
+ * 
+ * @module auth
+ */
+
 // Authentication utility functions and hooks
 import { useState, useEffect } from 'react';
 import { getCurrentUser } from 'aws-amplify/auth';
 
-// Custom hook to check authentication status
+/**
+ * Custom React hook for authentication state management.
+ * 
+ * Automatically checks for authenticated user on mount and updates
+ * when authentication changes (login/logout).
+ * 
+ * Authentication Flow:
+ * 1. Check sessionStorage for token (email/password auth)
+ * 2. If not found, check Cognito (social login)
+ * 3. Set user state and loading state accordingly
+ * 
+ * Event Listeners:
+ * - 'auth-change': Custom event fired when auth state changes (same tab)
+ * - 'storage': Browser event for sessionStorage changes (cross-tab sync)
+ * 
+ * @returns {Object} Auth state object
+ * @returns {Object|null} returns.user - Current user data or null if not authenticated
+ * @returns {string} returns.user.username - User's display name
+ * @returns {string} returns.user.email - User's email address
+ * @returns {number} returns.user.id - User's unique ID
+ * @returns {string} returns.user.authType - 'token' or 'cognito'
+ * @returns {boolean} returns.loading - True while checking authentication
+ * @returns {Function} returns.refreshAuth - Function to manually refresh auth state
+ * 
+ * @example
+ * function Navbar() {
+ *   const { user, loading } = useAuth();
+ *   
+ *   if (loading) return <div>Loading...</div>;
+ *   
+ *   return (
+ *     <nav>
+ *       {user ? (
+ *         <span>Welcome, {user.username}!</span>
+ *       ) : (
+ *         <Link to="/login">Login</Link>
+ *       )}
+ *     </nav>
+ *   );
+ * }
+ */
 export const useAuth = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * Check current authentication status.
+   * 
+   * Priority:
+   * 1. Token authentication (sessionStorage) - for email/password login
+   * 2. Cognito authentication - for social login (Google/Facebook)
+   * 
+   * @async
+   * @private
+   */
   const checkAuth = async () => {
     try {
       // Check for token authentication (email/password login)
-      const token = localStorage.getItem('token');
-      const userStr = localStorage.getItem('user');
+      const token = sessionStorage.getItem('token');
+      const userStr = sessionStorage.getItem('user');
       
       if (token && userStr) {
         const userData = JSON.parse(userStr);
@@ -26,12 +100,18 @@ export const useAuth = () => {
       }
 
       // Check for Cognito authentication (social login)
-      const currentUser = await getCurrentUser();
-      setUser({
-        username: currentUser.username || currentUser.signInDetails?.loginId,
-        authType: 'cognito'
-      });
+      try {
+        const currentUser = await getCurrentUser();
+        setUser({
+          username: currentUser.username || currentUser.signInDetails?.loginId,
+          authType: 'cognito'
+        });
+      } catch (cognitoError) {
+        // No Cognito user, that's fine
+        setUser(null);
+      }
     } catch (error) {
+      console.error('Auth check error:', error);
       setUser(null);
     } finally {
       setLoading(false);
@@ -39,23 +119,38 @@ export const useAuth = () => {
   };
 
   useEffect(() => {
+    // Initial auth check on component mount
     checkAuth();
 
-    // Listen for custom auth events
+    /**
+     * Event handler for authentication changes.
+     * Triggered when setAuthData() or clearAuthData() is called.
+     * Re-checks authentication to update component state.
+     */
     const handleAuthChange = () => {
       checkAuth();
     };
 
-    // Listen for storage changes (from other tabs)
+    /**
+     * Event handler for sessionStorage changes from other tabs.
+     * Allows auth state to sync across multiple browser tabs.
+     * 
+     * Note: Only fires for changes made in OTHER tabs, not the current tab.
+     * That's why we also need the custom 'auth-change' event.
+     */
     const handleStorageChange = (e) => {
       if (e.key === 'token' || e.key === 'user') {
         checkAuth();
       }
     };
 
+    // Listen for auth changes in current tab
     window.addEventListener('auth-change', handleAuthChange);
+    
+    // Listen for auth changes in other tabs
     window.addEventListener('storage', handleStorageChange);
 
+    // Cleanup event listeners on unmount
     return () => {
       window.removeEventListener('auth-change', handleAuthChange);
       window.removeEventListener('storage', handleStorageChange);
@@ -65,45 +160,140 @@ export const useAuth = () => {
   return { user, loading, refreshAuth: checkAuth };
 };
 
-// Trigger auth change event
+/**
+ * Trigger authentication change event.
+ * 
+ * Dispatches custom 'auth-change' event to notify all components
+ * using useAuth() hook that authentication state has changed.
+ * 
+ * Called by:
+ * - setAuthData() after successful login/registration
+ * - clearAuthData() after logout
+ * 
+ * @private
+ */
 export const triggerAuthChange = () => {
   window.dispatchEvent(new Event('auth-change'));
 };
 
-// Login helper
+/**
+ * Store authentication data and trigger state update.
+ * 
+ * Call this function after successful login or registration.
+ * Stores token and user data in sessionStorage (cleared on browser close).
+ * 
+ * @param {string} token - Authentication token from backend
+ * @param {Object} userData - User data object
+ * @param {number} userData.id - User's unique ID
+ * @param {string} userData.username - User's display name
+ * @param {string} userData.email - User's email address
+ * @param {number} [userData.elo_rating] - User's ELO rating
+ * 
+ * @fires auth-change - Triggers re-render of all components using useAuth()
+ * 
+ * @example
+ * // After successful login API call
+ * const response = await axios.post('/api/users/login/', credentials);
+ * setAuthData(response.data.token, response.data.user);
+ * // User is now logged in, components will auto-update
+ */
 export const setAuthData = (token, userData) => {
-  localStorage.setItem('token', token);
-  localStorage.setItem('user', JSON.stringify(userData));
+  sessionStorage.setItem('token', token);
+  sessionStorage.setItem('user', JSON.stringify(userData));
   triggerAuthChange();
 };
 
-// Logout helper
+/**
+ * Clear authentication data and trigger state update.
+ * 
+ * Call this function when user logs out.
+ * Removes token and user data from both sessionStorage and localStorage.
+ * 
+ * Why clear both?
+ * - sessionStorage: Current storage location
+ * - localStorage: Legacy storage (for migration from old version)
+ * 
+ * @fires auth-change - Triggers re-render of all components using useAuth()
+ * 
+ * @example
+ * // Logout handler
+ * const handleLogout = () => {
+ *   clearAuthData();
+ *   navigate('/');
+ * };
+ */
 export const clearAuthData = () => {
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('user');
+  // Also clear localStorage if exists (migration from old version)
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   triggerAuthChange();
 };
 
-// Check if user is authenticated
+/**
+ * Check if user is currently authenticated.
+ * 
+ * Simple synchronous check for token existence.
+ * Use useAuth() hook for reactive authentication state in components.
+ * 
+ * @returns {boolean} True if token exists in sessionStorage
+ * 
+ * @example
+ * if (isAuthenticated()) {
+ *   // Proceed with authenticated action
+ * } else {
+ *   // Redirect to login
+ * }
+ */
 export const isAuthenticated = () => {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   return !!token;
 };
 
-// Get current user from localStorage
+/**
+ * Get current user data from sessionStorage.
+ * 
+ * Returns parsed user object or null if not found/invalid.
+ * For reactive user state in components, use useAuth() hook instead.
+ * 
+ * @returns {Object|null} User data object or null
+ * 
+ * @example
+ * const userData = getCurrentUserData();
+ * if (userData) {
+ *   console.log(`Current user: ${userData.username}`);
+ * }
+ */
 export const getCurrentUserData = () => {
-  const userStr = localStorage.getItem('user');
+  const userStr = sessionStorage.getItem('user');
   if (userStr) {
     try {
       return JSON.parse(userStr);
     } catch (error) {
+      console.error('Failed to parse user data:', error);
       return null;
     }
   }
   return null;
 };
 
-// Get auth token
+/**
+ * Get authentication token for API requests.
+ * 
+ * Use this to include authentication in axios requests.
+ * 
+ * @returns {string|null} Authentication token or null if not found
+ * 
+ * @example
+ * // Making authenticated API request
+ * const token = getAuthToken();
+ * const response = await axios.get('/api/users/profile/', {
+ *   headers: {
+ *     Authorization: `Token ${token}`
+ *   }
+ * });
+ */
 export const getAuthToken = () => {
-  return localStorage.getItem('token');
+  return sessionStorage.getItem('token');
 };

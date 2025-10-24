@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { setAuthData } from '../utils/auth';
+import { setAuthData, useAuth } from '../utils/auth';
 import './RegisterPage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
 
 function RegisterPage() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -17,6 +18,13 @@ function RegisterPage() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -86,10 +94,7 @@ function RegisterPage() {
       
       setSuccessMessage('Registration successful! Redirecting...');
       
-      // Redirect to dashboard after 1 second
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1000);
+      // useEffect will handle redirect automatically when user state updates
       
     } catch (error) {
       console.error('Registration error:', error);
@@ -115,6 +120,19 @@ function RegisterPage() {
       setLoading(false);
     }
   };
+
+  // Show loading while checking auth or redirecting
+  if (authLoading || user) {
+    return (
+      <div className="register-page">
+        <div className="register-container">
+          <div className="register-card">
+            <p>{authLoading ? 'Loading...' : 'Redirecting to dashboard...'}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="register-page">

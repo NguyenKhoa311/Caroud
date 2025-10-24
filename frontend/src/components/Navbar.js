@@ -1,14 +1,20 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'aws-amplify/auth';
 import { useAuth, clearAuthData } from '../utils/auth';
+import ConfirmModal from './ConfirmModal';
 import './Navbar.css';
 
 function Navbar() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const handleSignOut = async () => {
+  const handleSignOutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleConfirmSignOut = async () => {
     try {
       if (user?.authType === 'token') {
         // Token-based logout (email/password)
@@ -22,7 +28,13 @@ function Navbar() {
       }
     } catch (error) {
       console.error('Error signing out:', error);
+    } finally {
+      setShowLogoutModal(false);
     }
+  };
+
+  const handleCancelSignOut = () => {
+    setShowLogoutModal(false);
   };
 
   return (
@@ -51,7 +63,7 @@ function Navbar() {
                     <span className="navbar-username">👤 {user.username}</span>
                   </li>
                   <li className="navbar-item">
-                    <button onClick={handleSignOut} className="navbar-btn navbar-btn-logout">
+                    <button onClick={handleSignOutClick} className="navbar-btn navbar-btn-logout">
                       Sign Out
                     </button>
                   </li>
@@ -67,6 +79,15 @@ function Navbar() {
           )}
         </ul>
       </div>
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLogoutModal}
+        title="Xác nhận đăng xuất"
+        message="Bạn có chắc chắn muốn đăng xuất khỏi tài khoản không?"
+        onConfirm={handleConfirmSignOut}
+        onCancel={handleCancelSignOut}
+      />
     </nav>
   );
 }

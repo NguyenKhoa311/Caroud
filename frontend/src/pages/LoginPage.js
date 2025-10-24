@@ -1,20 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { signInWithRedirect } from 'aws-amplify/auth';
 import axios from 'axios';
-import { setAuthData } from '../utils/auth';
+import { setAuthData, useAuth } from '../utils/auth';
 import './LoginPage.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
 
 function LoginPage() {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && user) {
+      navigate('/dashboard');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -70,8 +78,7 @@ function LoginPage() {
       // Store token and user info using auth utility
       setAuthData(response.data.token, response.data.user);
       
-      // Redirect to dashboard
-      navigate('/dashboard');
+      // useEffect will handle redirect automatically when user state updates
       
     } catch (error) {
       console.error('Login error:', error);
@@ -89,6 +96,19 @@ function LoginPage() {
       setLoading(false);
     }
   };
+
+  // Show loading while checking auth or redirecting
+  if (authLoading || user) {
+    return (
+      <div className="login-page">
+        <div className="login-container">
+          <div className="login-card">
+            <p>{authLoading ? 'Loading...' : 'Redirecting to dashboard...'}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-page">
