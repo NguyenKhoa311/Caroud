@@ -1,0 +1,35 @@
+.friends-page {
+  padding: 20px;
+}
+
+.friends-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.friends-header h1 {
+  color: #333;
+  font-size: 2em;
+}
+
+.friends-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+}
+
+.friends-section {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 20px;
+}
+
+/* Responsive layout */
+@media (max-width: 768px) {
+  .friends-content {
+    grid-template-columns: 1fr;
+  }
+}
