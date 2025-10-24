@@ -11,7 +11,7 @@ This module contains serializers for:
 from rest_framework import serializers
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from .models import User
+from .models import User, FriendRequest, Friendship
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -312,3 +312,45 @@ class LeaderboardSerializer(serializers.ModelSerializer):
             'rank', 'username', 'elo_rating',
             'wins', 'losses', 'total_games', 'win_rate'
         ]
+
+
+# --- Friend serializers ---
+class FriendRequestSerializer(serializers.ModelSerializer):
+    from_user = UserSerializer(read_only=True)
+    to_user = UserSerializer(read_only=True)
+
+    class Meta:
+        model = FriendRequest
+        fields = [
+            'id', 'from_user', 'to_user', 'status', 'via', 'token', 'created_at', 'expires_at'
+        ]
+
+
+class FriendshipSerializer(serializers.ModelSerializer):
+    friend = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Friendship
+        fields = [
+            'id', 'friend', 'created_at'
+        ]
+
+
+class FriendInviteCreateSerializer(serializers.Serializer):
+    # For creating invite links
+    # no fields required; server will create token for request.user
+    pass
+
+
+class FriendRequestCreateByUsernameSerializer(serializers.Serializer):
+    to_username = serializers.CharField()
+
+
+class InviteAcceptSerializer(serializers.Serializer):
+    token = serializers.CharField()
+
+
+class UserSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email']

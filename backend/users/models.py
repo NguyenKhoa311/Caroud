@@ -1,6 +1,9 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
+from datetime import timedelta
+import uuid
 
 
 class User(AbstractUser):
@@ -64,3 +67,71 @@ class User(AbstractUser):
         self.save()
         
         return elo_change
+
+
+class FriendRequest(models.Model):
+    """Model representing a friend request or invite link"""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('expired', 'Expired'),
+    ]
+
+    VIA_CHOICES = [
+        ('username', 'Username'),
+        ('link', 'Invite Link'),
+        ('social', 'Social'),
+    ]
+
+    id = models.BigAutoField(primary_key=True)
+    from_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='friend_requests_sent'
+    )
+    to_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='friend_requests_received'
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    token = models.CharField(max_length=128, unique=True, null=True, blank=True)
+    via = models.CharField(max_length=20, choices=VIA_CHOICES, default='username')
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'friend_requests'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        if self.to_user:
+            return f"{self.from_user.username} -> {self.to_user.username} ({self.status})"
+        return f"{self.from_user.username} -> [invite:{self.token}] ({self.status})"
+
+    def generate_token(self, lifetime_days=7):
+        self.token = uuid.uuid4().hex
+        self.expires_at = timezone.now() + timedelta(days=lifetime_days)
+        self.save()
+
+    def is_expired(self):
+        return self.expires_at and timezone.now() > self.expires_at
+
+
+class Friendship(models.Model):
+    """Symmetric friendship relation stored as two rows for simplicity"""
+    id = models.BigAutoField(primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friends')
+    friend = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friend_of')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'friendships'
+        unique_together = ('user', 'friend')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} <-> {self.friend.username}"
