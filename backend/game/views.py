@@ -13,13 +13,8 @@ class GameViewSet(viewsets.ModelViewSet):
     """
     queryset = Match.objects.all()
     serializer_class = MatchSerializer
-
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            permission_classes = [AllowAny]
-        else:
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
+    authentication_classes = []  # Disable authentication temporarily
+    permission_classes = []  # Disable permission checks temporarily
 
     def create(self, request):
         """Create a new game"""

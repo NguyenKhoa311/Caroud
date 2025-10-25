@@ -26,10 +26,12 @@ import api from './api';
  */
 export const getRooms = async (filters = {}) => {
   try {
-    const response = await api.get('/users/rooms/list/', {
+    const response = await api.get('/users/rooms/', {
       params: filters
     });
-    return Array.isArray(response.data) ? response.data : [];
+    // Backend returns paginated response with 'results' array
+    return Array.isArray(response.data?.results) ? response.data.results : 
+           Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('Error fetching rooms:', error);
     return [];
@@ -46,7 +48,7 @@ export const getRooms = async (filters = {}) => {
  * const room = await roomService.getRoomByCode('abc-123-def');
  */
 export const getRoomByCode = async (code) => {
-  const response = await api.get(`/users/rooms/list/${code}/`);
+  const response = await api.get(`/users/rooms/${code}/`);
   return response.data;
 };
 
@@ -71,7 +73,7 @@ export const getRoomByCode = async (code) => {
  * // Share room.join_url to invite players
  */
 export const createRoom = async (roomData) => {
-  const response = await api.post('/users/rooms/list/', roomData);
+  const response = await api.post('/users/rooms/', roomData);
   return response.data;
 };
 
@@ -85,7 +87,7 @@ export const createRoom = async (roomData) => {
  * const room = await roomService.joinRoom('abc-123-def');
  */
 export const joinRoom = async (code) => {
-  const response = await api.post(`/users/rooms/list/${code}/join/`);
+  const response = await api.post(`/users/rooms/${code}/join/`);
   return response.data;
 };
 
@@ -100,7 +102,7 @@ export const joinRoom = async (code) => {
  * const room = await roomService.toggleReady('abc-123-def');
  */
 export const toggleReady = async (code) => {
-  const response = await api.post(`/users/rooms/list/${code}/ready/`);
+  const response = await api.post(`/users/rooms/${code}/ready/`);
   return response.data;
 };
 
@@ -117,7 +119,7 @@ export const toggleReady = async (code) => {
  * // Navigate to game page with match ID
  */
 export const startGame = async (code) => {
-  const response = await api.post(`/users/rooms/list/${code}/start/`);
+  const response = await api.post(`/users/rooms/${code}/start/`);
   return response.data;
 };
 
@@ -132,7 +134,7 @@ export const startGame = async (code) => {
  * await roomService.leaveRoom('abc-123-def');
  */
 export const leaveRoom = async (code) => {
-  const response = await api.post(`/users/rooms/list/${code}/leave/`);
+  const response = await api.post(`/users/rooms/${code}/leave/`);
   return response.data;
 };
 
@@ -146,7 +148,7 @@ export const leaveRoom = async (code) => {
  * await roomService.closeRoom('abc-123-def');
  */
 export const closeRoom = async (code) => {
-  const response = await api.delete(`/users/rooms/list/${code}/`);
+  const response = await api.delete(`/users/rooms/${code}/`);
   return response.data;
 };
 

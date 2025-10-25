@@ -573,17 +573,18 @@ class GameRoomSerializer(serializers.ModelSerializer):
             room = serializer.save()
     """
     host = UserSerializer(read_only=True)
-    participants = RoomParticipantSerializer(many=True, read_only=True, source='roomparticipant_set')
+    participants = RoomParticipantSerializer(many=True, read_only=True)
     join_url = serializers.SerializerMethodField()
+    game = serializers.SerializerMethodField()
     
     class Meta:
         model = GameRoom
         fields = [
             'id', 'name', 'code', 'host', 'is_public',
             'max_players', 'status', 'participants',
-            'settings', 'join_url', 'created_at'
+            'settings', 'join_url', 'created_at', 'game'
         ]
-        read_only_fields = ['id', 'code', 'host', 'status', 'created_at']
+        read_only_fields = ['id', 'code', 'host', 'status', 'created_at', 'game']
     
     def get_join_url(self, obj):
         """Generate full join URL."""
@@ -591,6 +592,15 @@ class GameRoomSerializer(serializers.ModelSerializer):
         if request:
             return request.build_absolute_uri(f'/api/rooms/{obj.code}/')
         return f'/api/rooms/{obj.code}/'
+    
+    def get_game(self, obj):
+        """Return game info if exists."""
+        if obj.game:
+            return {
+                'id': obj.game.id,
+                'status': obj.game.status
+            }
+        return None
     
     def create(self, validated_data):
         """Create room with authenticated user as host."""

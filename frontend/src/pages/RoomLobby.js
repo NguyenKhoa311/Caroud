@@ -63,7 +63,7 @@ function RoomLobby() {
       
       // If game started, navigate to game page
       if (roomData.status === 'active' && roomData.game) {
-        navigate(`/game/${roomData.game.id}`);
+        navigate(`/game/online?matchId=${roomData.game.id}`);
       }
     } catch (err) {
       setError('Failed to load room details');
@@ -109,9 +109,9 @@ function RoomLobby() {
       const result = await roomService.startGame(code);
       setSuccessMessage('Game starting...');
       
-      // Navigate to game page
+      // Navigate to game page with online mode
       setTimeout(() => {
-        navigate(`/game/${result.match.id}`);
+        navigate(`/game/online?matchId=${result.match.id}`);
       }, 1000);
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to start game');

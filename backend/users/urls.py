@@ -17,7 +17,7 @@ friend_router.register(r'invite-links', FriendInviteLinkViewSet, basename='invit
 
 # Room system routes
 room_router = DefaultRouter()
-room_router.register(r'list', GameRoomViewSet, basename='game-room')
+room_router.register(r'', GameRoomViewSet, basename='game-room')
 room_router.register(r'invitations', RoomInvitationViewSet, basename='room-invitation')
 
 urlpatterns = [

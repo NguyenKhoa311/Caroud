@@ -148,12 +148,14 @@ class GameRoom(models.Model):
         Check if game can start.
         
         Returns:
-            bool: True if room has 2 players and is in waiting status
+            bool: True if room has 2 players and all are ready
         """
-        return (
-            self.status == 'waiting' and
-            self.get_participants_count() == 2
-        )
+        participants = self.get_participants()
+        if participants.count() != 2:
+            return False
+        
+        # Check if all participants are ready
+        return all(p.is_ready for p in participants)
     
     def start_game(self):
         """
@@ -173,14 +175,18 @@ class GameRoom(models.Model):
         player1 = participants[0].user
         player2 = participants[1].user
         
-        # Create match
+        # Create match (without room parameter since Match doesn't have a room field)
         match = Match.objects.create(
             black_player=player1,
             white_player=player2,
-            room=self,
-            status='active'
+            mode='online',
+            status='in_progress'
         )
         
+        # Initialize the board
+        match.initialize_board()
+        
+        # Link match to room
         self.game = match
         self.status = 'active'
         self.save()

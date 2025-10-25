@@ -955,7 +955,7 @@ class GameRoomViewSet(viewsets.ModelViewSet):
         # Base query: rooms where user is participant or host
         queryset = GameRoom.objects.filter(
             Q(host=self.request.user) |
-            Q(roomparticipant__user=self.request.user, roomparticipant__has_left=False)
+            Q(participants__user=self.request.user, participants__has_left=False)
         ).distinct()
         
         if status_filter:
@@ -965,7 +965,7 @@ class GameRoomViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(is_public=True)
         
         return queryset.select_related('host').prefetch_related(
-            'roomparticipant_set__user'
+            'participants__user'
         ).order_by('-created_at')
     
     @action(detail=True, methods=['post'])

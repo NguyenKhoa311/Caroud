@@ -1,7 +1,10 @@
 import json
+import logging
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from .models import Match
+
+logger = logging.getLogger(__name__)
 
 
 class GameConsumer(AsyncWebsocketConsumer):
@@ -10,23 +13,45 @@ class GameConsumer(AsyncWebsocketConsumer):
     """
     
     async def connect(self):
-        self.game_id = self.scope['url_route']['kwargs']['game_id']
-        self.room_group_name = f'game_{self.game_id}'
+        try:
+            logger.info(f"WebSocket connect attempt: {self.scope['url_route']['kwargs']}")
+            self.game_id = self.scope['url_route']['kwargs']['game_id']
+            self.room_group_name = f'game_{self.game_id}'
+            
+            logger.info(f"Game ID: {self.game_id}, Room group: {self.room_group_name}")
 
-        # Join room group
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
+            # Join room group
+            await self.channel_layer.group_add(
+                self.room_group_name,
+                self.channel_name
+            )
 
-        await self.accept()
-        
-        # Send current game state
-        game_state = await self.get_game_state()
-        await self.send(text_data=json.dumps({
-            'type': 'game_state',
-            'data': game_state
-        }))
+            await self.accept()
+            logger.info("WebSocket accepted")
+            
+            # Send current game state
+            try:
+                game_state = await self.get_game_state()
+                logger.info(f"Got game state: {game_state}")
+                if game_state:
+                    await self.send(text_data=json.dumps({
+                        'type': 'game_state',
+                        'data': game_state
+                    }))
+                else:
+                    await self.send(text_data=json.dumps({
+                        'type': 'error',
+                        'message': 'Game not found'
+                    }))
+            except Exception as e:
+                logger.error(f"Error getting game state: {e}", exc_info=True)
+                await self.send(text_data=json.dumps({
+                    'type': 'error',
+                    'message': str(e)
+                }))
+        except Exception as e:
+            logger.error(f"Error in connect: {e}", exc_info=True)
+            raise
 
     async def disconnect(self, close_code):
         # Leave room group
