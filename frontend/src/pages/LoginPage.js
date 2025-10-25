@@ -78,7 +78,8 @@ function LoginPage() {
       // Store token and user info using auth utility
       setAuthData(response.data.token, response.data.user);
       
-      // useEffect will handle redirect automatically when user state updates
+      // Navigate immediately after setting auth data
+      navigate('/dashboard');
       
     } catch (error) {
       console.error('Login error:', error);

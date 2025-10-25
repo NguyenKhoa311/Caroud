@@ -11,17 +11,15 @@ const api = axios.create({
 
 // Add auth token to requests
 api.interceptors.request.use(
-  async (config) => {
-    try {
-      // TODO: Get token from AWS Amplify
-      // const session = await fetchAuthSession();
-      // const token = session.tokens?.idToken?.toString();
-      // if (token) {
-      //   config.headers.Authorization = `Bearer ${token}`;
-      // }
-    } catch (error) {
-      console.error('Error getting auth token:', error);
+  (config) => {
+    // Get token from sessionStorage (for email/password auth)
+    const token = sessionStorage.getItem('token');
+    
+    if (token) {
+      // Django REST Framework expects "Token <token>"
+      config.headers.Authorization = `Token ${token}`;
     }
+    
     return config;
   },
   (error) => {

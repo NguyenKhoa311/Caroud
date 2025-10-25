@@ -2,6 +2,10 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
 
+# Import friendship and room models
+from .friendship_models import FriendRequest, Friendship, FriendInviteLink
+from .room_models import GameRoom, RoomParticipant, RoomInvitation
+
 
 class User(AbstractUser):
     """Custom user model with ELO rating"""

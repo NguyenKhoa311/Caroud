@@ -110,6 +110,24 @@
   color: white;
 }
 
+.action-friends {
+  border-color: #e67e22;
+}
+
+.action-friends:hover {
+  background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+  color: white;
+}
+
+.action-rooms {
+  border-color: #16a085;
+}
+
+.action-rooms:hover {
+  background: linear-gradient(135deg, #16a085 0%, #138d75 100%);
+  color: white;
+}
+
 .action-icon {
   font-size: 3rem;
   margin-bottom: 1rem;

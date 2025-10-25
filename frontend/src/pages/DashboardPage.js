@@ -13,14 +13,10 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    loadUserData();
-  }, []);
-
   const loadUserData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const userStr = localStorage.getItem('user');
+      const token = sessionStorage.getItem('token');
+      const userStr = sessionStorage.getItem('user');
 
       if (!token || !userStr) {
         navigate('/login');
@@ -63,6 +59,11 @@ function DashboardPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadUserData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (loading) {
     return (
@@ -110,6 +111,24 @@ function DashboardPage() {
             <div className="action-icon">👥</div>
             <h3>Local Game</h3>
             <p>Play with a friend</p>
+          </Link>
+        </div>
+      </div>
+
+      {/* Social Actions */}
+      <div className="quick-actions">
+        <h2>Social Features</h2>
+        <div className="actions-grid">
+          <Link to="/friends" className="action-card action-friends">
+            <div className="action-icon">👥</div>
+            <h3>Friends</h3>
+            <p>Manage friends and requests</p>
+          </Link>
+
+          <Link to="/rooms" className="action-card action-rooms">
+            <div className="action-icon">🏠</div>
+            <h3>Private Rooms</h3>
+            <p>Create or join game rooms</p>
           </Link>
         </div>
       </div>

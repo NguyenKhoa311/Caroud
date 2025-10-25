@@ -21,10 +21,15 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from django.db.models import Q
-from .models import User
+from .models import (
+    User, FriendRequest, Friendship, FriendInviteLink,
+    GameRoom, RoomParticipant, RoomInvitation
+)
 from .serializers import (
     UserSerializer, UserStatsSerializer, LeaderboardSerializer,
-    UserRegistrationSerializer, UserLoginSerializer
+    UserRegistrationSerializer, UserLoginSerializer,
+    FriendRequestSerializer, FriendshipSerializer, FriendInviteLinkSerializer,
+    GameRoomSerializer, RoomParticipantSerializer, RoomInvitationSerializer
 )
 from game.models import Match
 from game.serializers import MatchSerializer
@@ -483,3 +488,833 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
             data.append(user_data)
         
         return Response(data)
+
+
+# ============================================================================
+# Friend System Views
+# ============================================================================
+
+class FriendRequestViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for friend request operations.
+    
+    Endpoints:
+        GET    /api/friends/requests/         - List user's friend requests (received)
+        POST   /api/friends/requests/         - Send a friend request
+        GET    /api/friends/requests/sent/    - List sent friend requests
+        POST   /api/friends/requests/{id}/accept/ - Accept friend request
+        POST   /api/friends/requests/{id}/reject/ - Reject friend request
+        DELETE /api/friends/requests/{id}/     - Cancel sent request
+    
+    Permissions:
+        - All actions require authentication
+        - Users can only manage their own requests
+    
+    Example Usage:
+        # Send request
+        POST /api/friends/requests/
+        {
+            "to_user_id": 2,
+            "message": "Let's play together!"
+        }
+        
+        # Accept request
+        POST /api/friends/requests/5/accept/
+        
+        # List received requests
+        GET /api/friends/requests/?status=pending
+    """
+    serializer_class = FriendRequestSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_serializer_context(self):
+        """Add request to serializer context."""
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+    
+    def get_queryset(self):
+        """Get friend requests where user is recipient."""
+        status_filter = self.request.query_params.get('status', None)
+        queryset = FriendRequest.objects.filter(to_user=self.request.user)
+        
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        return queryset.select_related('from_user', 'to_user').order_by('-created_at')
+    
+    def perform_create(self, serializer):
+        """Create friend request from authenticated user."""
+        # Serializer's create() method gets from_user from request context
+        serializer.save()
+    
+    @action(detail=False, methods=['get'])
+    def sent(self, request):
+        """
+        List friend requests sent by current user.
+        
+        GET /api/friends/requests/sent/?status=pending
+        
+        Returns:
+            List of friend requests sent by user
+        """
+        status_filter = request.query_params.get('status', None)
+        queryset = FriendRequest.objects.filter(from_user=request.user)
+        
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        queryset = queryset.select_related('from_user', 'to_user').order_by('-created_at')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def accept(self, request, pk=None):
+        """
+        Accept a friend request.
+        
+        POST /api/friends/requests/{id}/accept/
+        
+        Creates bidirectional friendship between users.
+        
+        Returns:
+            200: Request accepted, friendship created
+            404: Request not found
+            400: Request already responded to or invalid
+        """
+        try:
+            friend_request = FriendRequest.objects.get(
+                id=pk,
+                to_user=request.user,
+                status='pending'
+            )
+        except FriendRequest.DoesNotExist:
+            return Response(
+                {'error': 'Friend request not found or already responded to.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Accept the request (creates Friendship entries)
+        friend_request.accept()
+        
+        return Response(
+            {'message': 'Friend request accepted.'},
+            status=status.HTTP_200_OK
+        )
+    
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """
+        Reject a friend request.
+        
+        POST /api/friends/requests/{id}/reject/
+        
+        Returns:
+            200: Request rejected
+            404: Request not found
+            400: Request already responded to
+        """
+        try:
+            friend_request = FriendRequest.objects.get(
+                id=pk,
+                to_user=request.user,
+                status='pending'
+            )
+        except FriendRequest.DoesNotExist:
+            return Response(
+                {'error': 'Friend request not found or already responded to.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        friend_request.reject()
+        
+        return Response(
+            {'message': 'Friend request rejected.'},
+            status=status.HTTP_200_OK
+        )
+    
+    def destroy(self, request, pk=None):
+        """
+        Cancel a sent friend request.
+        
+        DELETE /api/friends/requests/{id}/
+        
+        Only sender can cancel their own requests.
+        """
+        try:
+            friend_request = FriendRequest.objects.get(
+                id=pk,
+                from_user=request.user,
+                status='pending'
+            )
+        except FriendRequest.DoesNotExist:
+            return Response(
+                {'error': 'Friend request not found or cannot be cancelled.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        friend_request.cancel()
+        
+        return Response(
+            {'message': 'Friend request cancelled.'},
+            status=status.HTTP_200_OK
+        )
+
+
+class FriendshipViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for viewing friends list.
+    
+    Endpoints:
+        GET /api/friends/              - List user's friends
+        GET /api/friends/{id}/         - Get friend details
+        GET /api/friends/search/?q=username - Search users by username
+    
+    Permissions:
+        - All actions require authentication
+        - Users can only see their own friends
+    
+    Example Response:
+        [
+            {
+                "id": 1,
+                "friend": {
+                    "id": 2,
+                    "username": "player2",
+                    "elo_rating": 1300,
+                    "wins": 15
+                },
+                "social_source": "direct",
+                "created_at": "2024-01-15T10:30:00Z"
+            }
+        ]
+    """
+    serializer_class = FriendshipSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get user's friends, excluding blocked ones."""
+        return Friendship.objects.filter(
+            user=self.request.user,
+            is_blocked=False
+        ).select_related('friend').order_by('-created_at')
+    
+    @action(detail=False, methods=['get'])
+    def search(self, request):
+        """
+        Search for users by username to add as friends.
+        
+        GET /api/friends/search/?q=username
+        
+        Filters out:
+        - Current user
+        - Already friends
+        
+        Returns:
+            List of users matching search query with friend request status
+        """
+        query = request.query_params.get('q', '')
+        
+        if not query or len(query) < 2:
+            return Response(
+                {'error': 'Search query must be at least 2 characters.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get current user's friend IDs
+        friend_ids = Friendship.objects.filter(
+            user=request.user
+        ).values_list('friend_id', flat=True)
+        
+        # Get pending sent requests (to show "Request Pending" status)
+        pending_sent_requests = {}
+        sent_requests = FriendRequest.objects.filter(
+            from_user=request.user,
+            status='pending'
+        ).values('to_user_id', 'id')
+        for req in sent_requests:
+            pending_sent_requests[req['to_user_id']] = req['id']
+        
+        # Get pending received requests
+        pending_received_ids = set(
+            FriendRequest.objects.filter(
+                to_user=request.user,
+                status='pending'
+            ).values_list('from_user_id', flat=True)
+        )
+        
+        # Search users excluding self and existing friends
+        users = User.objects.filter(
+            username__icontains=query
+        ).exclude(
+            id=request.user.id
+        ).exclude(
+            id__in=friend_ids
+        )[:10]  # Limit to 10 results
+        
+        # Serialize users and add friend request status
+        serializer = UserSerializer(users, many=True)
+        data = serializer.data
+        
+        # Add friendship status to each user
+        for user_data in data:
+            user_id = user_data['id']
+            if user_id in pending_sent_requests:
+                user_data['friend_request_status'] = 'sent'
+                user_data['friend_request_id'] = pending_sent_requests[user_id]
+            elif user_id in pending_received_ids:
+                user_data['friend_request_status'] = 'received'
+            else:
+                user_data['friend_request_status'] = 'none'
+        
+        return Response(data)
+
+
+class FriendInviteLinkViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for friend invite links.
+    
+    Endpoints:
+        GET    /api/friends/invite-links/        - List user's invite links
+        POST   /api/friends/invite-links/        - Create new invite link
+        DELETE /api/friends/invite-links/{id}/   - Deactivate invite link
+        POST   /api/friends/invite/{code}/       - Accept invite via code
+    
+    Permissions:
+        - Creating/listing links requires authentication
+        - Accepting invite requires authentication
+    
+    Example Usage:
+        # Create link
+        POST /api/friends/invite-links/
+        {
+            "expires_at": "2024-12-31T23:59:59Z",
+            "max_uses": 10
+        }
+        
+        # Accept invite
+        POST /api/friends/invite/abc-123-def/
+    """
+    serializer_class = FriendInviteLinkSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'code'
+    
+    def get_queryset(self):
+        """Get user's active invite links."""
+        return FriendInviteLink.objects.filter(
+            user=self.request.user,
+            is_active=True
+        ).order_by('-created_at')
+    
+    def destroy(self, request, code=None):
+        """
+        Deactivate an invite link.
+        
+        DELETE /api/friends/invite-links/{code}/
+        """
+        try:
+            invite_link = FriendInviteLink.objects.get(
+                code=code,
+                user=request.user
+            )
+        except FriendInviteLink.DoesNotExist:
+            return Response(
+                {'error': 'Invite link not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        invite_link.is_active = False
+        invite_link.save()
+        
+        return Response(
+            {'message': 'Invite link deactivated.'},
+            status=status.HTTP_200_OK
+        )
+
+
+class AcceptInviteLinkView(generics.GenericAPIView):
+    """
+    View for accepting friend invites via invite link.
+    
+    Endpoint:
+        POST /api/friends/invite/{code}/
+    
+    Permissions:
+        - Requires authentication
+        - Cannot use own invite link
+    
+    Example:
+        POST /api/friends/invite/abc-123-def/
+        
+    Returns:
+        200: Friendship created
+        400: Invalid or expired link
+        404: Link not found
+    """
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, code):
+        """
+        Accept friend invitation via code.
+        
+        Validates link and creates friendship if valid.
+        """
+        try:
+            invite_link = FriendInviteLink.objects.select_related('user').get(code=code)
+        except FriendInviteLink.DoesNotExist:
+            return Response(
+                {'error': 'Invite link not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if user is trying to use their own link
+        if invite_link.user == request.user:
+            return Response(
+                {'error': 'You cannot use your own invite link.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if link is valid
+        if not invite_link.is_valid():
+            return Response(
+                {'error': 'This invite link is expired or has reached its usage limit.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if already friends
+        if Friendship.are_friends(request.user, invite_link.user):
+            return Response(
+                {'error': 'You are already friends with this user.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create friendship
+        Friendship.create_friendship(
+            user1=request.user,
+            user2=invite_link.user,
+            social_source='invite_link'
+        )
+        
+        # Increment usage count
+        invite_link.use()
+        
+        return Response(
+            {
+                'message': f'You are now friends with {invite_link.user.username}!',
+                'friend': UserSerializer(invite_link.user).data
+            },
+            status=status.HTTP_200_OK
+        )
+
+
+# ============================================================================
+# Game Room Views
+# ============================================================================
+
+class GameRoomViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for game room operations.
+    
+    Endpoints:
+        GET    /api/rooms/              - List user's rooms
+        POST   /api/rooms/              - Create new room
+        GET    /api/rooms/{code}/       - Get room details
+        POST   /api/rooms/{code}/join/  - Join room via code
+        POST   /api/rooms/{code}/ready/ - Toggle ready status
+        POST   /api/rooms/{code}/start/ - Start game (host only)
+        DELETE /api/rooms/{code}/       - Close room (host only)
+        POST   /api/rooms/{code}/leave/ - Leave room
+    
+    Permissions:
+        - All actions require authentication
+    
+    Example Usage:
+        # Create room
+        POST /api/rooms/
+        {
+            "name": "My Private Room",
+            "is_public": false,
+            "max_players": 2
+        }
+    """
+    serializer_class = GameRoomSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'code'
+    
+    def get_queryset(self):
+        """
+        Get rooms where user is host or participant.
+        
+        Filters:
+        - status: Filter by room status (waiting/ready/active/finished)
+        - public: Show only public rooms
+        """
+        status_filter = self.request.query_params.get('status', None)
+        show_public = self.request.query_params.get('public', None)
+        
+        # Base query: rooms where user is participant or host
+        queryset = GameRoom.objects.filter(
+            Q(host=self.request.user) |
+            Q(roomparticipant__user=self.request.user, roomparticipant__has_left=False)
+        ).distinct()
+        
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        if show_public == 'true':
+            queryset = queryset.filter(is_public=True)
+        
+        return queryset.select_related('host').prefetch_related(
+            'roomparticipant_set__user'
+        ).order_by('-created_at')
+    
+    @action(detail=True, methods=['post'])
+    def join(self, request, code=None):
+        """
+        Join a room via code.
+        
+        POST /api/rooms/{code}/join/
+        
+        Returns:
+            200: Successfully joined
+            400: Room full, already in room, or invalid status
+            404: Room not found
+        """
+        try:
+            room = GameRoom.objects.get(code=code)
+        except GameRoom.DoesNotExist:
+            return Response(
+                {'error': 'Room not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if room is joinable
+        if room.status not in ['waiting', 'ready']:
+            return Response(
+                {'error': 'This room is not accepting new players.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if room is full
+        if room.is_full():
+            return Response(
+                {'error': 'This room is full.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if already in room
+        if RoomParticipant.objects.filter(
+            room=room,
+            user=request.user,
+            has_left=False
+        ).exists():
+            return Response(
+                {'error': 'You are already in this room.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Join room
+        RoomParticipant.objects.create(
+            room=room,
+            user=request.user
+        )
+        
+        # Return updated room data
+        serializer = self.get_serializer(room)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'])
+    def ready(self, request, code=None):
+        """
+        Toggle ready status in room.
+        
+        POST /api/rooms/{code}/ready/
+        
+        Returns:
+            200: Ready status toggled
+            400: Not in room
+            404: Room not found
+        """
+        try:
+            room = GameRoom.objects.get(code=code)
+        except GameRoom.DoesNotExist:
+            return Response(
+                {'error': 'Room not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get participant
+        try:
+            participant = RoomParticipant.objects.get(
+                room=room,
+                user=request.user,
+                has_left=False
+            )
+        except RoomParticipant.DoesNotExist:
+            return Response(
+                {'error': 'You are not in this room.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Toggle ready status
+        participant.is_ready = not participant.is_ready
+        participant.save()
+        
+        # Update room status if all players are ready
+        if room.can_start():
+            room.status = 'ready'
+            room.save()
+        elif room.status == 'ready':
+            room.status = 'waiting'
+            room.save()
+        
+        # Return updated room data
+        serializer = self.get_serializer(room)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'])
+    def start(self, request, code=None):
+        """
+        Start the game (host only).
+        
+        POST /api/rooms/{code}/start/
+        
+        Creates a Match and updates room status to 'active'.
+        
+        Returns:
+            200: Game started with match data
+            400: Not enough players or not all ready
+            403: Only host can start game
+            404: Room not found
+        """
+        try:
+            room = GameRoom.objects.get(code=code)
+        except GameRoom.DoesNotExist:
+            return Response(
+                {'error': 'Room not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if user is host
+        if room.host != request.user:
+            return Response(
+                {'error': 'Only the host can start the game.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Check if game can start
+        if not room.can_start():
+            return Response(
+                {'error': 'Cannot start game. Make sure room is full and all players are ready.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Start the game (creates Match)
+        match = room.start_game()
+        
+        # Return match data
+        from game.serializers import MatchSerializer
+        return Response(
+            {
+                'message': 'Game started!',
+                'match': MatchSerializer(match).data,
+                'room': self.get_serializer(room).data
+            },
+            status=status.HTTP_200_OK
+        )
+    
+    @action(detail=True, methods=['post'])
+    def leave(self, request, code=None):
+        """
+        Leave a room.
+        
+        POST /api/rooms/{code}/leave/
+        
+        If host leaves, room is closed.
+        
+        Returns:
+            200: Successfully left
+            400: Not in room
+            404: Room not found
+        """
+        try:
+            room = GameRoom.objects.get(code=code)
+        except GameRoom.DoesNotExist:
+            return Response(
+                {'error': 'Room not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Get participant
+        try:
+            participant = RoomParticipant.objects.get(
+                room=room,
+                user=request.user,
+                has_left=False
+            )
+        except RoomParticipant.DoesNotExist:
+            return Response(
+                {'error': 'You are not in this room.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Mark as left
+        participant.has_left = True
+        participant.save()
+        
+        # If host leaves, close the room
+        if room.host == request.user:
+            room.close()
+            return Response(
+                {'message': 'You left the room. Room has been closed.'},
+                status=status.HTTP_200_OK
+            )
+        
+        return Response(
+            {'message': 'You left the room.'},
+            status=status.HTTP_200_OK
+        )
+    
+    def destroy(self, request, code=None):
+        """
+        Close a room (host only).
+        
+        DELETE /api/rooms/{code}/
+        
+        Only host can close the room.
+        """
+        try:
+            room = GameRoom.objects.get(code=code)
+        except GameRoom.DoesNotExist:
+            return Response(
+                {'error': 'Room not found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if user is host
+        if room.host != request.user:
+            return Response(
+                {'error': 'Only the host can close the room.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        room.close()
+        
+        return Response(
+            {'message': 'Room closed.'},
+            status=status.HTTP_200_OK
+        )
+
+
+class RoomInvitationViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for room invitation operations.
+    
+    Endpoints:
+        GET    /api/rooms/invitations/         - List received invitations
+        POST   /api/rooms/invitations/         - Send invitation
+        POST   /api/rooms/invitations/{id}/accept/ - Accept invitation
+        POST   /api/rooms/invitations/{id}/reject/ - Reject invitation
+    
+    Permissions:
+        - All actions require authentication
+    
+    Example Usage:
+        # Send invitation
+        POST /api/rooms/invitations/
+        {
+            "room_id": 1,
+            "to_user_id": 2,
+            "message": "Join my game!"
+        }
+    """
+    serializer_class = RoomInvitationSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Get invitations received by user."""
+        status_filter = self.request.query_params.get('status', 'pending')
+        queryset = RoomInvitation.objects.filter(to_user=self.request.user)
+        
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+        
+        return queryset.select_related(
+            'room', 'from_user', 'to_user'
+        ).order_by('-created_at')
+    
+    @action(detail=True, methods=['post'])
+    def accept(self, request, pk=None):
+        """
+        Accept a room invitation.
+        
+        POST /api/rooms/invitations/{id}/accept/
+        
+        Joins user to the room automatically.
+        
+        Returns:
+            200: Invitation accepted, joined room
+            404: Invitation not found
+            400: Invalid or expired invitation
+        """
+        try:
+            invitation = RoomInvitation.objects.select_related('room').get(
+                id=pk,
+                to_user=request.user,
+                status='pending'
+            )
+        except RoomInvitation.DoesNotExist:
+            return Response(
+                {'error': 'Invitation not found or already responded to.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Check if invitation is still valid
+        if invitation.is_expired():
+            return Response(
+                {'error': 'This invitation has expired.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Accept invitation (adds user to room)
+        invitation.accept()
+        
+        # Return room data
+        room_serializer = GameRoomSerializer(invitation.room)
+        return Response(
+            {
+                'message': 'Invitation accepted. You have joined the room!',
+                'room': room_serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
+    
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """
+        Reject a room invitation.
+        
+        POST /api/rooms/invitations/{id}/reject/
+        
+        Returns:
+            200: Invitation rejected
+            404: Invitation not found
+        """
+        try:
+            invitation = RoomInvitation.objects.get(
+                id=pk,
+                to_user=request.user,
+                status='pending'
+            )
+        except RoomInvitation.DoesNotExist:
+            return Response(
+                {'error': 'Invitation not found or already responded to.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        invitation.reject()
+        
+        return Response(
+            {'message': 'Invitation rejected.'},
+            status=status.HTTP_200_OK
+        )

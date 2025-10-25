@@ -11,6 +11,9 @@ import ProfilePage from './pages/ProfilePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
+import FriendsPage from './pages/FriendsPage';
+import RoomsPage from './pages/RoomsPage';
+import RoomLobby from './pages/RoomLobby';
 
 // Components
 import Navbar from './components/Navbar';
@@ -50,6 +53,9 @@ function App() {
           <Route path="/game/:mode" element={<PrivateRoute><GamePage /></PrivateRoute>} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+          <Route path="/friends" element={<PrivateRoute><FriendsPage /></PrivateRoute>} />
+          <Route path="/rooms" element={<PrivateRoute><RoomsPage /></PrivateRoute>} />
+          <Route path="/room/:code" element={<PrivateRoute><RoomLobby /></PrivateRoute>} />
         </Routes>
       </div>
     </Router>

@@ -57,6 +57,12 @@ function Navbar() {
               {user ? (
                 <>
                   <li className="navbar-item">
+                    <Link to="/friends" className="navbar-link">👥 Friends</Link>
+                  </li>
+                  <li className="navbar-item">
+                    <Link to="/rooms" className="navbar-link">🏠 Rooms</Link>
+                  </li>
+                  <li className="navbar-item">
                     <Link to="/profile" className="navbar-link">Profile</Link>
                   </li>
                   <li className="navbar-item navbar-user">

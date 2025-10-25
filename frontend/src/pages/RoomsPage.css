@@ -1,0 +1,418 @@
+/* Rooms Page Styles */
+
+.rooms-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.rooms-page h1 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+}
+
+/* Messages */
+.message {
+  padding: 12px 20px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  font-weight: 500;
+}
+
+.message.error {
+  background-color: #fee;
+  color: #c33;
+  border: 1px solid #fcc;
+}
+
+.message.success {
+  background-color: #efe;
+  color: #3c3;
+  border: 1px solid #cfc;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.tabs button {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 16px;
+  color: #666;
+  transition: all 0.3s;
+}
+
+.tabs button:hover {
+  color: #2c3e50;
+  background-color: #f5f5f5;
+}
+
+.tabs button.active {
+  color: #28a745;
+  border-bottom-color: #28a745;
+  font-weight: 600;
+}
+
+/* Rooms Grid */
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.room-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.room-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.room-header h3 {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 18px;
+}
+
+.room-status {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.room-status.waiting {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.room-status.ready {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.room-status.active {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.room-info {
+  margin: 12px 0;
+  padding: 12px 0;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #eee;
+}
+
+.room-info p {
+  margin: 6px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.room-info code {
+  background-color: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+.room-participants {
+  margin: 12px 0;
+}
+
+.participant {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.ready-badge {
+  background-color: #28a745;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.room-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btn-enter,
+.btn-copy {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-enter {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-enter:hover {
+  background-color: #218838;
+}
+
+.btn-copy {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.btn-copy:hover {
+  background-color: #138496;
+}
+
+/* Create/Join Section */
+.create-join-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-top: 20px;
+}
+
+.create-room-form,
+.join-room-form {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.create-room-form h2,
+.join-room-form h2 {
+  color: #2c3e50;
+  margin: 0 0 20px 0;
+  font-size: 20px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  color: #2c3e50;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.form-group input[type="text"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-group input[type="text"]:focus {
+  outline: none;
+  border-color: #28a745;
+}
+
+.form-group.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-group.checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.form-group.checkbox label {
+  margin: 0;
+  cursor: pointer;
+}
+
+.btn-create,
+.btn-join {
+  width: 100%;
+  padding: 12px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.btn-create:hover,
+.btn-join:hover {
+  background-color: #218838;
+}
+
+/* Invitations */
+.invitations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.invitation-card {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.invitation-info {
+  flex: 1;
+}
+
+.invitation-info h3 {
+  color: #2c3e50;
+  margin: 0 0 8px 0;
+  font-size: 18px;
+}
+
+.invitation-info p {
+  margin: 4px 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.invitation-message {
+  font-style: italic;
+  color: #28a745;
+  margin: 8px 0;
+}
+
+.invitation-details {
+  font-weight: 500;
+}
+
+.invitation-date {
+  color: #999;
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+.invitation-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-accept,
+.btn-reject {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn-accept {
+  background-color: #28a745;
+  color: white;
+}
+
+.btn-accept:hover {
+  background-color: #218838;
+}
+
+.btn-reject {
+  background-color: #f44336;
+  color: white;
+}
+
+.btn-reject:hover {
+  background-color: #da190b;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  color: #999;
+  padding: 60px 20px;
+  font-size: 16px;
+}
+
+/* Loading State */
+.rooms-page.loading {
+  text-align: center;
+  padding: 100px 20px;
+  font-size: 18px;
+  color: #666;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .create-join-section {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .invitation-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .invitation-actions {
+    margin-top: 16px;
+    width: 100%;
+  }
+
+  .invitation-actions button {
+    flex: 1;
+  }
+
+  .room-actions {
+    flex-direction: column;
+  }
+
+  .room-actions button {
+    width: 100%;
+  }
+}

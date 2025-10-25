@@ -94,7 +94,8 @@ function RegisterPage() {
       
       setSuccessMessage('Registration successful! Redirecting...');
       
-      // useEffect will handle redirect automatically when user state updates
+      // Navigate immediately after setting auth data
+      navigate('/dashboard');
       
     } catch (error) {
       console.error('Registration error:', error);
