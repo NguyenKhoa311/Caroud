@@ -95,10 +95,10 @@ function DashboardPage() {
       <div className="quick-actions">
         <h2>Quick Play</h2>
         <div className="actions-grid">
-          <Link to="/game/online" className="action-card action-online">
-            <div className="action-icon">🌐</div>
-            <h3>Find Match</h3>
-            <p>Play against random opponent</p>
+          <Link to="/matchmaking" className="action-card action-matchmaking">
+            <div className="action-icon">�</div>
+            <h3>Ranked Match</h3>
+            <p>Find opponent with similar ELO</p>
           </Link>
 
           <Link to="/game/ai" className="action-card action-ai">

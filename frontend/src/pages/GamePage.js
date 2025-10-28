@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Board from '../components/Board';
 import { gameService } from '../services/gameService';
 import { useAuth } from '../utils/auth';
@@ -8,9 +8,12 @@ import './GamePage.css';
 const BOARD_SIZE = 15;
 
 function GamePage() {
-  const { mode } = useParams(); // local, online, ai
+  const { mode: paramMode } = useParams(); // local, online, ai from URL params
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const matchId = searchParams.get('matchId');
+  const queryMode = searchParams.get('mode'); // mode from query string
+  const mode = queryMode || paramMode; // Prefer query mode for matchmaking
   const { user } = useAuth();
   
   const [board, setBoard] = useState(Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null)));
@@ -75,13 +78,13 @@ function GamePage() {
       setMatchData(data);
       
       // Determine which player I am
+      let myPlayerValue = null;
       if (data.black_player_detail && data.black_player_detail.id === user.id) {
-        setMyPlayer('X');
-        setGameStatus(`You are Black (X) - ${data.current_turn === 'X' ? 'Your turn!' : 'Waiting for opponent...'}`);
+        myPlayerValue = 'X';
       } else if (data.white_player_detail && data.white_player_detail.id === user.id) {
-        setMyPlayer('O');
-        setGameStatus(`You are White (O) - ${data.current_turn === 'O' ? 'Your turn!' : 'Waiting for opponent...'}`);
+        myPlayerValue = 'O';
       }
+      setMyPlayer(myPlayerValue);
       
       setBlackPlayer(data.black_player_detail);
       setWhitePlayer(data.white_player_detail);
@@ -96,6 +99,13 @@ function GamePage() {
       }
       
       setCurrentPlayer(data.current_turn);
+      
+      // Set initial status based on turn
+      if (myPlayerValue === data.current_turn) {
+        setGameStatus('🎯 Your turn!');
+      } else {
+        setGameStatus('⏳ Waiting for opponent...');
+      }
       
       // Check if game is over
       if (data.status === 'completed') {
@@ -167,7 +177,12 @@ function GamePage() {
             setGameStatus('Draw! 🤝');
           }
         } else {
-          setGameStatus(myPlayer === nextPlayer ? 'Your turn!' : 'Waiting for opponent...');
+          // Update status based on whose turn it is
+          if (myPlayer === nextPlayer) {
+            setGameStatus('🎯 Your turn!');
+          } else {
+            setGameStatus('⏳ Waiting for opponent...');
+          }
         }
       }
     };
@@ -224,9 +239,9 @@ function GamePage() {
       
       // Check if it's my turn
       if (myPlayer !== currentPlayer) {
-        setGameStatus('Not your turn!');
+        setGameStatus('❌ Not your turn!');
         setTimeout(() => {
-          setGameStatus(myPlayer === currentPlayer ? 'Your turn!' : 'Waiting for opponent...');
+          setGameStatus('⏳ Waiting for opponent...');
         }, 1000);
         return;
       }
@@ -249,7 +264,7 @@ function GamePage() {
           newBoard[row][col] = myPlayer;
           return newBoard;
         });
-        setGameStatus('Waiting for opponent...');
+        setGameStatus('⏳ Waiting for opponent...');
       }
       
       return;
@@ -389,6 +404,51 @@ function GamePage() {
             <button onClick={handleRestart} className="btn btn-primary">
               Play Again
             </button>
+          </div>
+        )}
+
+        {/* Game Over Modal for Online Mode */}
+        {gameOver && mode === 'online' && (
+          <div className="game-over-modal">
+            <div className="modal-content">
+              {winner === myPlayer ? (
+                <>
+                  <div className="modal-icon winner">🎉</div>
+                  <h2 className="modal-title winner">Victory!</h2>
+                  <p className="modal-message">Congratulations! You won the match!</p>
+                </>
+              ) : winner && winner !== myPlayer ? (
+                <>
+                  <div className="modal-icon loser">😔</div>
+                  <h2 className="modal-title loser">Defeat</h2>
+                  <p className="modal-message">Better luck next time!</p>
+                </>
+              ) : (
+                <>
+                  <div className="modal-icon draw">🤝</div>
+                  <h2 className="modal-title draw">Draw!</h2>
+                  <p className="modal-message">It's a tie! Well played!</p>
+                </>
+              )}
+              
+              <div className="modal-stats">
+                <div className="stat-row">
+                  <span>⚫ Black:</span>
+                  <span className="player-name-stat">{blackPlayer?.username}</span>
+                </div>
+                <div className="stat-row">
+                  <span>⚪ White:</span>
+                  <span className="player-name-stat">{whitePlayer?.username}</span>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => navigate('/dashboard')} 
+                className="btn btn-primary btn-large"
+              >
+                🏠 Back to Dashboard
+              </button>
+            </div>
           </div>
         )}
       </div>

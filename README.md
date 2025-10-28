@@ -47,10 +47,11 @@ Visit http://localhost:3000 to play!
 ### AWS Services
 - **S3 + CloudFront:** Static file hosting for React frontend
 - **EC2:** Django backend and WebSocket server
+- **RDS PostgreSQL:** Production database
 - **Cognito:** User authentication and authorization
 - **API Gateway:** REST API endpoints
 - **Lambda:** Serverless functions for specific tasks
-- **RDS:** Optional backup database
+- **ElastiCache Redis:** WebSocket channel layer and caching
 
 ## 📁 Project Structure
 
@@ -130,7 +131,21 @@ python manage.py runserver
 3. After authentication, receive JWT token
 4. Token used for API authorization
 
-## 📝 License
+## �️ AWS RDS PostgreSQL Setup
+
+For production deployment, see detailed guide:
+- **[AWS RDS Setup Guide](docs/AWS_RDS_SETUP.md)** - Step-by-step RDS configuration
+- **[RDS Setup Checklist](docs/RDS_SETUP_CHECKLIST.md)** - Complete checklist
+
+Quick test RDS connection:
+```bash
+cd backend
+./test_rds_connection.sh
+# or
+python test_rds_connection.py
+```
+
+## �📝 License
 
 MIT License
 

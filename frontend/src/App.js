@@ -14,6 +14,7 @@ import DashboardPage from './pages/DashboardPage';
 import FriendsPage from './pages/FriendsPage';
 import RoomsPage from './pages/RoomsPage';
 import RoomLobby from './pages/RoomLobby';
+import MatchmakingPage from './pages/MatchmakingPage';
 
 // Components
 import Navbar from './components/Navbar';
@@ -51,6 +52,8 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
           <Route path="/game/:mode" element={<PrivateRoute><GamePage /></PrivateRoute>} />
+          <Route path="/game" element={<PrivateRoute><GamePage /></PrivateRoute>} />
+          <Route path="/matchmaking" element={<PrivateRoute><MatchmakingPage /></PrivateRoute>} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
           <Route path="/friends" element={<PrivateRoute><FriendsPage /></PrivateRoute>} />

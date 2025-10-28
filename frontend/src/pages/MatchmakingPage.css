@@ -1,0 +1,311 @@
+.matchmaking-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.matchmaking-container {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.matchmaking-container h1 {
+  margin: 0 0 30px 0;
+  color: #333;
+  font-size: 2.5em;
+}
+
+/* Player Info */
+.player-info {
+  background: #f8f9fa;
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.player-info h3 {
+  margin: 0 0 10px 0;
+  color: #333;
+  font-size: 1.5em;
+}
+
+.elo-badge {
+  display: inline-flex;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-weight: bold;
+  gap: 10px;
+}
+
+.elo-label {
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+.elo-value {
+  font-size: 1.3em;
+}
+
+/* Idle State */
+.matchmaking-idle {
+  padding: 20px 0;
+}
+
+.matchmaking-idle .description {
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 30px;
+  font-size: 1.1em;
+}
+
+/* Buttons */
+.btn-primary, .btn-secondary {
+  padding: 15px 40px;
+  border: none;
+  border-radius: 30px;
+  font-size: 1.2em;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin: 10px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #5a6268;
+  transform: translateY(-2px);
+}
+
+.btn-large {
+  padding: 20px 60px;
+  font-size: 1.4em;
+}
+
+/* Searching State */
+.matchmaking-searching {
+  padding: 20px 0;
+}
+
+.searching-animation {
+  margin-bottom: 30px;
+}
+
+.spinner {
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 20px;
+  border: 8px solid #f3f3f3;
+  border-top: 8px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.searching-animation h2 {
+  color: #667eea;
+  font-size: 1.8em;
+  margin: 0;
+}
+
+.waiting-time {
+  background: #e9ecef;
+  padding: 15px;
+  border-radius: 10px;
+  margin: 20px 0;
+  display: inline-block;
+  min-width: 200px;
+}
+
+.time-label {
+  color: #666;
+  margin-right: 10px;
+}
+
+.time-value {
+  color: #667eea;
+  font-size: 1.5em;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+}
+
+.queue-stats {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 20px;
+  margin: 20px 0;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.stat-item:last-child {
+  border-bottom: none;
+}
+
+.stat-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.stat-value {
+  color: #333;
+  font-weight: bold;
+  font-size: 1.2em;
+}
+
+.search-tips {
+  margin-top: 30px;
+  padding: 15px;
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: 5px;
+  text-align: left;
+}
+
+.search-tips p {
+  margin: 0;
+  color: #856404;
+}
+
+/* Matched State */
+.matchmaking-matched {
+  padding: 20px 0;
+}
+
+.match-found-animation {
+  margin-bottom: 30px;
+}
+
+.match-found-animation h2 {
+  color: #28a745;
+  font-size: 2.5em;
+  margin: 0;
+  animation: bounce 0.5s ease;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+.opponent-info h3 {
+  color: #333;
+  margin-bottom: 15px;
+}
+
+.opponent-card {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  padding: 25px;
+  border-radius: 15px;
+  margin-bottom: 20px;
+}
+
+.opponent-name {
+  font-size: 2em;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+.opponent-elo {
+  font-size: 1.2em;
+  opacity: 0.9;
+}
+
+.match-details {
+  margin-top: 30px;
+}
+
+.match-details p {
+  color: #666;
+  font-size: 1.1em;
+  margin-bottom: 15px;
+}
+
+.loading-bar {
+  width: 100%;
+  height: 10px;
+  background: #e9ecef;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  animation: loadingBar 2s ease-in-out;
+  border-radius: 5px;
+}
+
+@keyframes loadingBar {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
+/* Error State */
+.matchmaking-error {
+  padding: 20px 0;
+}
+
+.matchmaking-error h3 {
+  color: #dc3545;
+  margin-bottom: 15px;
+}
+
+.matchmaking-error p {
+  color: #666;
+  margin-bottom: 20px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .matchmaking-container {
+    padding: 30px 20px;
+  }
+
+  .matchmaking-container h1 {
+    font-size: 2em;
+  }
+
+  .btn-large {
+    padding: 15px 40px;
+    font-size: 1.2em;
+  }
+
+  .opponent-name {
+    font-size: 1.5em;
+  }
+}

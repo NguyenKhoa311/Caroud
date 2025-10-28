@@ -61,13 +61,13 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         Set permissions based on action.
         
-        Public actions: list, retrieve, stats
+        Public actions: list, retrieve, stats, matches
         Protected actions: create, update, delete, profile
         
         Returns:
             list: List of permission class instances
         """
-        if self.action in ['list', 'retrieve', 'stats']:
+        if self.action in ['list', 'retrieve', 'stats', 'matches']:
             permission_classes = [AllowAny]
         else:
             permission_classes = [IsAuthenticated]
@@ -168,6 +168,7 @@ class UserViewSet(viewsets.ModelViewSet):
             - Only returns completed matches (status='completed')
             - Sorted by most recent first (updated_at DESC)
             - User can be either black_player or white_player
+            - Includes opponent_username for easy display
             
         Example:
             GET /api/users/5/matches/?limit=20
@@ -179,6 +180,7 @@ class UserViewSet(viewsets.ModelViewSet):
                     "black_player": 5,
                     "white_player": 8,
                     "winner": 5,
+                    "opponent_username": "player2",
                     "status": "completed",
                     ...
                 },
@@ -195,7 +197,20 @@ class UserViewSet(viewsets.ModelViewSet):
         ).order_by('-updated_at')[:limit]
         
         serializer = MatchSerializer(matches, many=True)
-        return Response(serializer.data)
+        data = serializer.data
+        
+        # Add opponent_username to each match
+        for i, match_obj in enumerate(matches):
+            if match_obj.black_player and match_obj.black_player.id == user.id:
+                # User is black player, opponent is white
+                opponent = match_obj.white_player
+            else:
+                # User is white player, opponent is black
+                opponent = match_obj.black_player
+            
+            data[i]['opponent_username'] = opponent.username if opponent else 'AI' if match_obj.mode == 'ai' else 'Unknown'
+        
+        return Response(data)
 
 
 class UserRegistrationView(generics.CreateAPIView):

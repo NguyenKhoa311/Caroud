@@ -92,6 +92,15 @@
   color: white;
 }
 
+.action-matchmaking {
+  border-color: #667eea;
+}
+
+.action-matchmaking:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
 .action-ai {
   border-color: #9b59b6;
 }
