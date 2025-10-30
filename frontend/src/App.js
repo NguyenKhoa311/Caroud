@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Amplify } from 'aws-amplify';
 import './App.css';
 
+// Session management interceptor
+import './utils/sessionInterceptor';
+
 // Pages
 import HomePage from './pages/HomePage';
 import GamePage from './pages/GamePage';

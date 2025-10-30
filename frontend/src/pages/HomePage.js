@@ -8,58 +8,61 @@ function HomePage() {
 
   return (
     <div className="home-page">
-      <div className="hero-section">
-        <h1 className="hero-title">🎮 Caro Game</h1>
-        <p className="hero-subtitle">
-          Play Caro (Five in a Row) online with friends, random players, or AI
-        </p>
-        <p className="hero-description">
-          Challenge players worldwide on AWS Cloud Platform
-        </p>
+      {/* Welcome Section */}
+      <div className="home-header">
+        <h1>🎮 Welcome to Caro Game</h1>
+        <p className="home-subtitle">Play Caro (Five in a Row) online with friends, random players, or AI</p>
+        <p className="home-description">Challenge players worldwide on AWS Cloud Platform</p>
       </div>
 
-      <div className="game-modes">
+      {/* Quick Play */}
+      <div className="quick-actions">
         <h2>Choose Your Game Mode</h2>
-        
-        <div className="modes-grid">
-          {/* Local Multiplayer */}
-          <div className="mode-card">
-            <div className="mode-icon">👥</div>
-            <h3>Local Multiplayer</h3>
-            <p>Play with a friend on the same device</p>
-            <Link to="/game/local" className="btn btn-primary">
-              Play Local
-            </Link>
-          </div>
-
+        <div className="actions-grid">
           {/* Online Matchmaking */}
-          <div className="mode-card">
-            <div className="mode-icon">🌐</div>
-            <h3>Online Match</h3>
-            <p>Find an opponent based on your ELO rating</p>
-            {user ? (
-              <Link to="/game/online" className="btn btn-primary">
-                Find Match
-              </Link>
-            ) : (
-              <Link to="/login" className="btn btn-secondary">
-                Login to Play
-              </Link>
-            )}
-          </div>
+          <Link to={user ? "/matchmaking" : "/login"} className="action-card action-matchmaking">
+            <div className="action-icon">🌐</div>
+            <h3>Ranked Match</h3>
+            <p>Find opponent with similar ELO</p>
+          </Link>
 
           {/* Play vs AI */}
-          <div className="mode-card">
-            <div className="mode-icon">🤖</div>
+          <Link to="/game/ai" className="action-card action-ai">
+            <div className="action-icon">🤖</div>
             <h3>Play vs AI</h3>
             <p>Challenge our artificial intelligence</p>
-            <Link to="/game/ai" className="btn btn-primary">
-              Play vs AI
-            </Link>
-          </div>
+          </Link>
+
+          {/* Local Multiplayer */}
+          <Link to="/game/local" className="action-card action-local">
+            <div className="action-icon">👥</div>
+            <h3>Local Game</h3>
+            <p>Play with a friend on the same device</p>
+          </Link>
         </div>
       </div>
 
+      {/* Social Features */}
+      {user && (
+        <div className="quick-actions">
+          <h2>Social Features</h2>
+          <div className="actions-grid">
+            <Link to="/friends" className="action-card action-friends">
+              <div className="action-icon">👥</div>
+              <h3>Friends</h3>
+              <p>Manage friends and requests</p>
+            </Link>
+
+            <Link to="/rooms" className="action-card action-rooms">
+              <div className="action-icon">🏠</div>
+              <h3>Private Rooms</h3>
+              <p>Create or join game rooms</p>
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {/* Features Section */}
       <div className="features-section">
         <h2>Features</h2>
         <div className="features-grid">
@@ -86,17 +89,54 @@ function HomePage() {
         </div>
       </div>
 
+      {/* Game Rules */}
       <div className="rules-section">
-        <h2>Game Rules</h2>
+        <div className="section-header">
+          <h2>Game Rules</h2>
+        </div>
         <div className="rules-content">
-          <ul>
-            <li>🎯 Board size: 15x15</li>
-            <li>⚫ Black (X) plays first</li>
-            <li>🏁 Win by placing 5 stones in a row (horizontal, vertical, or diagonal)</li>
-            <li>⏱️ Each player has 30 seconds per move in online matches</li>
-          </ul>
+          <div className="rule-item">
+            <span className="rule-icon">🎯</span>
+            <div>
+              <h4>Board Size</h4>
+              <p>Play on a 15x15 grid</p>
+            </div>
+          </div>
+          <div className="rule-item">
+            <span className="rule-icon">⚫</span>
+            <div>
+              <h4>First Move</h4>
+              <p>Black (X) plays first</p>
+            </div>
+          </div>
+          <div className="rule-item">
+            <span className="rule-icon">🏁</span>
+            <div>
+              <h4>Win Condition</h4>
+              <p>Place 5 stones in a row (horizontal, vertical, or diagonal)</p>
+            </div>
+          </div>
+          <div className="rule-item">
+            <span className="rule-icon">⏱️</span>
+            <div>
+              <h4>Time Limit</h4>
+              <p>30 seconds per move in online matches</p>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Call to Action */}
+      {!user && (
+        <div className="cta-section">
+          <h2>Ready to Play?</h2>
+          <p>Join thousands of players and start your journey to the top!</p>
+          <div className="cta-buttons">
+            <Link to="/login" className="btn btn-primary">Login Now</Link>
+            <Link to="/register" className="btn btn-secondary">Create Account</Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

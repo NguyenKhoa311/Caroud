@@ -17,6 +17,11 @@ class User(AbstractUser):
     draws = models.IntegerField(default=0)
     current_streak = models.IntegerField(default=0)
     best_streak = models.IntegerField(default=0)
+    
+    # Session management for single login enforcement
+    active_session_key = models.CharField(max_length=255, null=True, blank=True)
+    last_login_at = models.DateTimeField(null=True, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -68,3 +73,8 @@ class User(AbstractUser):
         self.save()
         
         return elo_change
+
+    def get_leaderboard_rank(self):
+        """Get user's current rank on leaderboard (1-indexed)"""
+        rank = User.objects.filter(elo_rating__gt=self.elo_rating).count() + 1
+        return rank

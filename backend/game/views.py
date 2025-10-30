@@ -127,9 +127,41 @@ class GameViewSet(viewsets.ModelViewSet):
         if winning_line:
             match.winning_line = winning_line
         
+        # Store old ranks before finishing game
+        old_ranks = {}
+        if match.mode == 'online' and match.black_player and match.white_player:
+            old_ranks['black'] = match.black_player.get_leaderboard_rank()
+            old_ranks['white'] = match.white_player.get_leaderboard_rank()
+        
         match.finish_game(result)
         
-        return Response({
+        # Build response with ELO changes and rank changes
+        response_data = {
             'status': 'success',
             'match': MatchSerializer(match).data
-        })
+        }
+        
+        # Add ELO change data for online matches
+        if match.mode == 'online' and match.black_player and match.white_player:
+            response_data['elo_changes'] = {
+                'black_player': {
+                    'user_id': match.black_player.id,
+                    'username': match.black_player.username,
+                    'old_elo': match.black_elo_before,
+                    'new_elo': match.black_player.elo_rating,
+                    'change': match.black_elo_change,
+                    'old_rank': old_ranks['black'],
+                    'new_rank': match.black_player.get_leaderboard_rank()
+                },
+                'white_player': {
+                    'user_id': match.white_player.id,
+                    'username': match.white_player.username,
+                    'old_elo': match.white_elo_before,
+                    'new_elo': match.white_player.elo_rating,
+                    'change': match.white_elo_change,
+                    'old_rank': old_ranks['white'],
+                    'new_rank': match.white_player.get_leaderboard_rank()
+                }
+            }
+        
+        return Response(response_data)

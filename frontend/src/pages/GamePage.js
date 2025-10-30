@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Board from '../components/Board';
+import ELOChangeModal from '../components/ELOChangeModal';
 import { gameService } from '../services/gameService';
 import roomService from '../services/roomService';
 import { useAuth } from '../utils/auth';
@@ -30,6 +31,11 @@ function GamePage() {
   const [blackPlayer, setBlackPlayer] = useState(null);
   const [whitePlayer, setWhitePlayer] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // ELO Modal state
+  const [showELOModal, setShowELOModal] = useState(false);
+  const [eloData, setEloData] = useState(null);
+  const [matchResult, setMatchResult] = useState(null); // 'win', 'loss', 'draw'
 
   const wsRef = useRef(null);
 
@@ -169,14 +175,48 @@ function GamePage() {
             setWinningLine(data.result.winning_line);
           }
           
+          // Determine result text
+          let resultText = '';
           if (data.result.result === 'black_win') {
             setWinner('X');
-            setGameStatus('Black wins! 🎉');
+            resultText = 'Black wins! 🎉';
           } else if (data.result.result === 'white_win') {
             setWinner('O');
-            setGameStatus('White wins! 🎉');
+            resultText = 'White wins! 🎉';
           } else {
-            setGameStatus('Draw! 🤝');
+            resultText = 'Draw! 🤝';
+          }
+          setGameStatus(resultText);
+          
+          // Show ELO modal for online matches with ELO changes
+          if (mode === 'online' && data.result.elo_changes && user) {
+            const myPlayerData = myPlayer === 'X' 
+              ? data.result.elo_changes.black_player 
+              : data.result.elo_changes.white_player;
+            
+            if (myPlayerData) {
+              // Determine match result from my perspective
+              let myResult = 'draw';
+              if (data.result.result === 'black_win') {
+                myResult = myPlayer === 'X' ? 'win' : 'loss';
+              } else if (data.result.result === 'white_win') {
+                myResult = myPlayer === 'O' ? 'win' : 'loss';
+              }
+              
+              setMatchResult(myResult);
+              setEloData({
+                oldElo: myPlayerData.old_elo,
+                newElo: myPlayerData.new_elo,
+                change: myPlayerData.change,
+                oldRank: myPlayerData.old_rank,
+                newRank: myPlayerData.new_rank
+              });
+              
+              // Show modal after a short delay for better UX
+              setTimeout(() => {
+                setShowELOModal(true);
+              }, 1500);
+            }
           }
         } else {
           // Update status based on whose turn it is
@@ -423,8 +463,18 @@ function GamePage() {
           </div>
         )}
 
-        {/* Game Over Modal for Online Mode */}
-        {gameOver && mode === 'online' && (
+        {/* ELO Change Modal - Shows first for online matches */}
+        {mode === 'online' && (
+          <ELOChangeModal
+            isOpen={showELOModal}
+            onClose={() => setShowELOModal(false)}
+            matchResult={matchResult}
+            eloData={eloData}
+          />
+        )}
+
+        {/* Game Over Modal for Online Mode - Shows after ELO modal is closed */}
+        {gameOver && mode === 'online' && !showELOModal && (
           <div className="game-over-modal">
             <div className="modal-content">
               {winner === myPlayer ? (

@@ -1,0 +1,402 @@
+/* ELO Change Modal Styles */
+
+.elo-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.elo-modal-content {
+  background: linear-gradient(135deg, #1e1e2e 0%, #2a2a3e 100%);
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.4s ease-out;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Result Header */
+.elo-modal-header {
+  text-align: center;
+  padding: 20px;
+  border-radius: 15px;
+  margin-bottom: 30px;
+  animation: bounceIn 0.6s ease-out;
+}
+
+@keyframes bounceIn {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.result-win {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+}
+
+.result-loss {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  box-shadow: 0 10px 30px rgba(239, 68, 68, 0.3);
+}
+
+.result-neutral {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  box-shadow: 0 10px 30px rgba(107, 114, 128, 0.3);
+}
+
+.elo-modal-header .result-emoji {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 10px;
+  animation: rotateIn 0.8s ease-out;
+}
+
+@keyframes rotateIn {
+  from {
+    transform: rotate(-180deg) scale(0);
+  }
+  to {
+    transform: rotate(0) scale(1);
+  }
+}
+
+.elo-modal-header h2 {
+  margin: 0;
+  color: white;
+  font-size: 2rem;
+  font-weight: bold;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* ELO Display */
+.elo-display {
+  text-align: center;
+  padding: 30px 0;
+  position: relative;
+}
+
+.elo-label {
+  color: #9ca3af;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+
+.elo-number {
+  font-size: 4rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.elo-number.elo-gain {
+  color: #10b981;
+  text-shadow: 0 4px 20px rgba(16, 185, 129, 0.5);
+  animation: pulse 0.5s ease-out;
+}
+
+.elo-number.elo-loss {
+  color: #ef4444;
+  text-shadow: 0 4px 20px rgba(239, 68, 68, 0.5);
+  animation: shake 0.5s ease-out;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-10px);
+  }
+  75% {
+    transform: translateX(10px);
+  }
+}
+
+/* ELO Change Badge */
+.elo-change-badge {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 10px 25px;
+  border-radius: 25px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  animation: slideInBadge 0.5s ease-out 0.3s backwards;
+}
+
+@keyframes slideInBadge {
+  from {
+    transform: translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.elo-change-badge.positive {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 2px solid #10b981;
+}
+
+.elo-change-badge.negative {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 2px solid #ef4444;
+}
+
+.elo-change-badge.neutral {
+  background: rgba(107, 114, 128, 0.2);
+  color: #9ca3af;
+  border: 2px solid #6b7280;
+}
+
+.elo-arrow {
+  margin-left: 8px;
+  font-size: 1.2rem;
+}
+
+/* Details Section */
+.elo-details {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 15px;
+  padding: 25px;
+  margin-top: 20px;
+  animation: fadeInDetails 0.5s ease-out 0.5s backwards;
+}
+
+@keyframes fadeInDetails {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.elo-transition {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+}
+
+.old-elo {
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.arrow {
+  color: #6b7280;
+  font-size: 1.5rem;
+}
+
+.new-elo {
+  color: white;
+  font-weight: bold;
+}
+
+/* Rank Change */
+.rank-change,
+.rank-unchanged {
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rank-label {
+  color: #9ca3af;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
+}
+
+.rank-transition {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.old-rank,
+.new-rank {
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.old-rank {
+  color: #9ca3af;
+}
+
+.new-rank {
+  color: white;
+}
+
+.rank-badge {
+  padding: 5px 15px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-left: 10px;
+}
+
+.rank-improved {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  border: 1px solid #10b981;
+  animation: rankUpPulse 0.8s ease-out;
+}
+
+@keyframes rankUpPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  25%, 75% {
+    transform: scale(1.15);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.rank-decreased {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+  border: 1px solid #ef4444;
+}
+
+.rank-unchanged .rank-value {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: white;
+  margin-top: 5px;
+}
+
+/* Close Button */
+.elo-modal-close {
+  width: 100%;
+  padding: 15px;
+  margin-top: 25px;
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
+
+.elo-modal-close:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(139, 92, 246, 0.5);
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+.elo-modal-close:active {
+  transform: translateY(0);
+}
+
+/* Motivational Message */
+.elo-motivation {
+  text-align: center;
+  margin-top: 20px;
+  color: #9ca3af;
+  font-size: 0.95rem;
+  font-style: italic;
+  animation: fadeInMotivation 0.5s ease-out 1s backwards;
+}
+
+@keyframes fadeInMotivation {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 600px) {
+  .elo-modal-content {
+    padding: 25px;
+    width: 95%;
+  }
+
+  .elo-modal-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .elo-number {
+    font-size: 3rem;
+  }
+
+  .elo-change-badge {
+    font-size: 1.2rem;
+    padding: 8px 20px;
+  }
+
+  .elo-transition {
+    font-size: 1rem;
+  }
+}

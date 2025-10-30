@@ -390,10 +390,17 @@ class UserLoginView(generics.GenericAPIView):
         # Tokens don't expire by default in DRF
         token, created = Token.objects.get_or_create(user=user)
         
+        # Update session tracking - invalidate old sessions
+        session_key = f'token:{token.key}'
+        user.active_session_key = session_key
+        user.last_login_at = timezone.now()
+        user.save(update_fields=['active_session_key', 'last_login_at'])
+        
         return Response({
             'user': UserSerializer(user).data,
             'token': token.key,
-            'message': 'Login successful!'
+            'message': 'Login successful!',
+            'session_key': session_key  # Send to frontend for tracking
         }, status=status.HTTP_200_OK)
 
 
