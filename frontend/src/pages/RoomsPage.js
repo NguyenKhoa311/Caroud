@@ -55,9 +55,9 @@ function RoomsPage() {
     setError('');
     
     try {
-      // Get all active rooms (not finished or closed)
+      // Get all rooms including public rooms
       const [roomsData, invitationsData] = await Promise.all([
-        roomService.getRooms({}), // Get all rooms where user is participant
+        roomService.getRooms({ public: 'true' }), // Get user's rooms + all public rooms
         roomService.getInvitations('pending')
       ]);
       
@@ -187,9 +187,22 @@ function RoomsPage() {
 
   /**
    * Navigate to room lobby
+   * Auto-join if not already in room
    */
-  const handleEnterRoom = (roomCode) => {
-    navigate(`/room/${roomCode}`);
+  const handleEnterRoom = async (roomCode) => {
+    try {
+      // Try to join the room first (will handle rejoin if already joined)
+      await roomService.joinRoom(roomCode);
+      // Navigate to room lobby
+      navigate(`/room/${roomCode}`);
+    } catch (err) {
+      // If already in room, just navigate
+      if (err.response?.data?.error?.includes('already in this room')) {
+        navigate(`/room/${roomCode}`);
+      } else {
+        setError(err.response?.data?.error || 'Failed to enter room');
+      }
+    }
   };
 
   if (loading) {

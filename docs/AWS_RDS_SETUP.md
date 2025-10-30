@@ -201,10 +201,10 @@ DEBUG=False
 ALLOWED_HOSTS=localhost,127.0.0.1,your-domain.com
 
 # AWS RDS PostgreSQL
-DB_NAME=caroud
+DB_NAME=caroud-db
 DB_USER=postgres
-DB_PASSWORD=YOUR_RDS_MASTER_PASSWORD_HERE
-DB_HOST=caroud-db.xxxxxx.us-east-1.rds.amazonaws.com
+DB_PASSWORD=realsomot
+DB_HOST=caroud-db.chyo8scokfws.ap-southeast-1.rds.amazonaws.com
 DB_PORT=5432
 
 # Redis

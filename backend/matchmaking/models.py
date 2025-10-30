@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from users.models import User
 
 
@@ -14,6 +15,7 @@ class MatchmakingQueue(models.Model):
     player = models.OneToOneField(User, on_delete=models.CASCADE, related_name='queue')
     elo_rating = models.IntegerField()
     joined_at = models.DateTimeField(auto_now_add=True)
+    last_active = models.DateTimeField(default=timezone.now)  # Track when user last polled
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='waiting')
     matched_with = models.ForeignKey(
         User, 

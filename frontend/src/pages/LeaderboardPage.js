@@ -12,28 +12,14 @@ function LeaderboardPage() {
   }, [filter]);
 
   const fetchLeaderboard = async () => {
-    setLoading(true);
     try {
-      // TODO: Replace with actual API call
-      // const data = await leaderboardService.getLeaderboard(filter);
-      
-      // Mock data for now
-      const mockData = [
-        { rank: 1, username: 'GrandMaster', elo: 2150, wins: 156, losses: 42, winRate: 78.8 },
-        { rank: 2, username: 'CaroPro', elo: 2050, wins: 134, losses: 51, winRate: 72.4 },
-        { rank: 3, username: 'StrategicMind', elo: 1980, wins: 98, losses: 38, winRate: 72.1 },
-        { rank: 4, username: 'BoardMaster', elo: 1920, wins: 87, losses: 41, winRate: 68.0 },
-        { rank: 5, username: 'TacticalGenius', elo: 1850, wins: 76, losses: 39, winRate: 66.1 },
-        { rank: 6, username: 'QuickThinker', elo: 1780, wins: 65, losses: 42, winRate: 60.7 },
-        { rank: 7, username: 'PatientPlayer', elo: 1720, wins: 58, losses: 38, winRate: 60.4 },
-        { rank: 8, username: 'RiskyGambler', elo: 1650, wins: 52, losses: 45, winRate: 53.6 },
-        { rank: 9, username: 'SteadyWinner', elo: 1590, wins: 48, losses: 41, winRate: 53.9 },
-        { rank: 10, username: 'Challenger', elo: 1520, wins: 42, losses: 44, winRate: 48.8 },
-      ];
-      
-      setPlayers(mockData);
+      setLoading(true);
+      // Fetch real leaderboard data from API
+      const data = await leaderboardService.getLeaderboard(filter);
+      setPlayers(data);
     } catch (error) {
-      console.error('Error fetching leaderboard:', error);
+      console.error('Failed to fetch leaderboard:', error);
+      setPlayers([]);
     } finally {
       setLoading(false);
     }
@@ -111,7 +97,7 @@ function LeaderboardPage() {
                   <strong>{player.username}</strong>
                 </div>
                 <div className="col-elo">
-                  <span className="elo-badge">{player.elo}</span>
+                  <span className="elo-badge">{player.elo_rating}</span>
                 </div>
                 <div className="col-stats">
                   <span className="wins">{player.wins}W</span>
@@ -121,9 +107,9 @@ function LeaderboardPage() {
                   <div className="winrate-bar">
                     <div 
                       className="winrate-fill" 
-                      style={{ width: `${player.winRate}%` }}
+                      style={{ width: `${player.win_rate}%` }}
                     ></div>
-                    <span className="winrate-text">{player.winRate.toFixed(1)}%</span>
+                    <span className="winrate-text">{player.win_rate.toFixed(1)}%</span>
                   </div>
                 </div>
               </div>

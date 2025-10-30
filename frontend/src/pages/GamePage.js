@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Board from '../components/Board';
 import { gameService } from '../services/gameService';
+import roomService from '../services/roomService';
 import { useAuth } from '../utils/auth';
 import './GamePage.css';
 
@@ -13,6 +14,7 @@ function GamePage() {
   const navigate = useNavigate();
   const matchId = searchParams.get('matchId');
   const queryMode = searchParams.get('mode'); // mode from query string
+  const roomCode = searchParams.get('roomCode'); // room code if started from room
   const mode = queryMode || paramMode; // Prefer query mode for matchmaking
   const { user } = useAuth();
   
@@ -354,6 +356,20 @@ function GamePage() {
     }
   };
 
+  // Handle back to dashboard - leave room if from room
+  const handleBackToDashboard = async () => {
+    if (roomCode) {
+      try {
+        // Leave room before navigating
+        await roomService.leaveRoom(roomCode);
+      } catch (err) {
+        console.error('Error leaving room:', err);
+        // Navigate anyway even if leave fails
+      }
+    }
+    navigate('/dashboard');
+  };
+
   return (
     <div className="game-page">
       <div className="game-container">
@@ -443,7 +459,7 @@ function GamePage() {
               </div>
 
               <button 
-                onClick={() => navigate('/dashboard')} 
+                onClick={handleBackToDashboard} 
                 className="btn btn-primary btn-large"
               >
                 🏠 Back to Dashboard

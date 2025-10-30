@@ -127,6 +127,7 @@ class MatchmakingViewSet(viewsets.ViewSet):
     def status(self, request):
         """
         Check matchmaking status (for polling)
+        Also cleans up stale entries (older than 5 minutes)
         """
         # Get user from token
         token = request.headers.get('Authorization', '').replace('Token ', '')
@@ -147,8 +148,22 @@ class MatchmakingViewSet(viewsets.ViewSet):
                 'message': 'Authentication required'
             }, status=status.HTTP_401_UNAUTHORIZED)
         
+        # Cleanup stale entries (older than 5 minutes with no activity)
+        stale_time = timezone.now() - timezone.timedelta(minutes=5)
+        stale_count = MatchmakingQueue.objects.filter(
+            status='waiting',
+            joined_at__lt=stale_time
+        ).delete()[0]
+        
+        if stale_count > 0:
+            logger.info(f"Cleaned up {stale_count} stale matchmaking entries")
+        
         try:
             queue_entry = MatchmakingQueue.objects.get(player=player, status='waiting')
+            
+            # Update last_active timestamp to show player is still here
+            queue_entry.last_active = timezone.now()
+            queue_entry.save(update_fields=['last_active'])
             
             # Try to find opponent with expanded range
             opponent_queue = Matchmaker.find_opponent(player, queue_entry)

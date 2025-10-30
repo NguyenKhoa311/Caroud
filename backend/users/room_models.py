@@ -197,6 +197,44 @@ class GameRoom(models.Model):
         """Close the room."""
         self.status = 'closed'
         self.save()
+    
+    def has_all_left(self):
+        """
+        Check if all participants have left the room.
+        
+        Returns:
+            bool: True if no active participants remain
+        """
+        return self.participants.filter(has_left=False).count() == 0
+    
+    def transfer_host(self):
+        """
+        Transfer host to another active participant.
+        
+        Called when current host leaves the room.
+        
+        Returns:
+            User: New host user, or None if no participants left
+        """
+        remaining = self.participants.filter(has_left=False).exclude(user=self.host).first()
+        if remaining:
+            self.host = remaining.user
+            self.status = 'waiting'  # Reset to waiting for new host
+            self.save()
+            return remaining.user
+        return None
+    
+    def delete_if_empty(self):
+        """
+        Delete room if all participants have left.
+        
+        Returns:
+            bool: True if room was deleted, False otherwise
+        """
+        if self.has_all_left():
+            self.delete()
+            return True
+        return False
 
 
 class RoomParticipant(models.Model):

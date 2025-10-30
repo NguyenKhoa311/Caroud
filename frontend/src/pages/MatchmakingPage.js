@@ -139,6 +139,40 @@ function MatchmakingPage() {
     };
   }, [status]);
 
+  // Auto-cancel when tab becomes hidden or page unloads
+  useEffect(() => {
+    // Handle page visibility change (tab switch)
+    const handleVisibilityChange = () => {
+      if (document.hidden && status === 'searching') {
+        console.log('Tab hidden while searching - canceling matchmaking');
+        handleCancelMatchmaking();
+      }
+    };
+
+    // Handle page unload (close/refresh)
+    const handleBeforeUnload = (e) => {
+      if (status === 'searching') {
+        // Try to leave queue (may not complete due to browser restrictions)
+        matchmakingService.leaveQueue().catch(console.error);
+        
+        // Show confirmation dialog
+        e.preventDefault();
+        e.returnValue = 'You are currently searching for a match. Are you sure you want to leave?';
+        return e.returnValue;
+      }
+    };
+
+    // Add event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Cleanup listeners
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [status]); // Re-run when status changes
+
   // Format time as MM:SS
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);

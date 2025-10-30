@@ -63,7 +63,7 @@ function RoomLobby() {
       
       // If game started, navigate to game page
       if (roomData.status === 'active' && roomData.game) {
-        navigate(`/game/online?matchId=${roomData.game.id}`);
+        navigate(`/game?mode=online&matchId=${roomData.game.id}&roomCode=${code}`);
       }
     } catch (err) {
       setError('Failed to load room details');

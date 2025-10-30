@@ -21,6 +21,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from django.db.models import Q
+from django.utils import timezone
 from .models import (
     User, FriendRequest, Friendship, FriendInviteLink,
     GameRoom, RoomParticipant, RoomInvitation
@@ -443,7 +444,7 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
         Get filtered and sorted queryset for leaderboard.
         
         Filters:
-            - Users with at least 1 win (excludes inactive players)
+            - All active users (including those with no games played)
         
         Query Parameters:
             - filter: 'all', 'week', 'month' (only 'all' implemented)
@@ -459,7 +460,7 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
             This requires tracking game timestamps and recalculating stats
         """
         queryset = User.objects.filter(
-            wins__gt=0  # Only show players who have won at least once
+            is_active=True  # Show all active users
         ).order_by('-elo_rating')
         
         filter_type = self.request.query_params.get('filter', 'all')
@@ -958,30 +959,63 @@ class GameRoomViewSet(viewsets.ModelViewSet):
     
     def get_queryset(self):
         """
-        Get rooms where user is host or participant.
+        Get rooms where user is host or participant, plus public rooms.
         
         Filters:
         - status: Filter by room status (waiting/ready/active/finished)
         - public: Show only public rooms
+        - my_rooms: If 'true', show only user's own rooms (default behavior)
         """
         status_filter = self.request.query_params.get('status', None)
         show_public = self.request.query_params.get('public', None)
+        my_rooms_only = self.request.query_params.get('my_rooms', 'false')
         
-        # Base query: rooms where user is participant or host
-        queryset = GameRoom.objects.filter(
-            Q(host=self.request.user) |
-            Q(participants__user=self.request.user, participants__has_left=False)
-        ).distinct()
+        if my_rooms_only == 'true' or show_public != 'true':
+            # Default: rooms where user is participant or host
+            queryset = GameRoom.objects.filter(
+                Q(host=self.request.user) |
+                Q(participants__user=self.request.user, participants__has_left=False)
+            ).distinct()
+        else:
+            # Show all public rooms that are joinable
+            queryset = GameRoom.objects.filter(
+                Q(is_public=True) |
+                Q(host=self.request.user) |
+                Q(participants__user=self.request.user, participants__has_left=False)
+            ).distinct()
         
         if status_filter:
             queryset = queryset.filter(status=status_filter)
         
-        if show_public == 'true':
-            queryset = queryset.filter(is_public=True)
-        
         return queryset.select_related('host').prefetch_related(
             'participants__user'
         ).order_by('-created_at')
+    
+    def list(self, request, *args, **kwargs):
+        """
+        List rooms and automatically clean up empty rooms.
+        
+        Empty rooms (all participants left) are deleted automatically.
+        """
+        queryset = self.get_queryset()
+        
+        # Clean up empty rooms before listing
+        rooms_to_delete = []
+        for room in queryset:
+            # Check if all participants have left
+            active_participants = room.participants.filter(has_left=False).count()
+            if active_participants == 0:
+                rooms_to_delete.append(room.id)
+        
+        # Delete empty rooms
+        if rooms_to_delete:
+            GameRoom.objects.filter(id__in=rooms_to_delete).delete()
+            # Re-fetch queryset after deletion
+            queryset = self.get_queryset()
+        
+        # Serialize and return
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
     
     @action(detail=True, methods=['post'])
     def join(self, request, code=None):
@@ -1003,6 +1037,32 @@ class GameRoomViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
         
+        # Check if user is already in room (active participant)
+        existing_participant = RoomParticipant.objects.filter(
+            room=room,
+            user=request.user
+        ).first()
+        
+        if existing_participant:
+            if not existing_participant.has_left:
+                # Already in room and active
+                return Response(
+                    {'error': 'You are already in this room.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            else:
+                # Was in room but left - rejoin by resetting has_left flag
+                # Allow rejoining even if game is active (user was disconnected)
+                existing_participant.has_left = False
+                existing_participant.is_ready = False
+                existing_participant.joined_at = timezone.now()
+                existing_participant.save()
+                
+                # Return updated room data
+                serializer = self.get_serializer(room)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+        
+        # For NEW participants (not rejoining), enforce status and capacity rules
         # Check if room is joinable
         if room.status not in ['waiting', 'ready']:
             return Response(
@@ -1017,18 +1077,7 @@ class GameRoomViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check if already in room
-        if RoomParticipant.objects.filter(
-            room=room,
-            user=request.user,
-            has_left=False
-        ).exists():
-            return Response(
-                {'error': 'You are already in this room.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Join room
+        # New participant - create record
         RoomParticipant.objects.create(
             room=room,
             user=request.user
@@ -1177,13 +1226,34 @@ class GameRoomViewSet(viewsets.ModelViewSet):
         participant.has_left = True
         participant.save()
         
-        # If host leaves, close the room
-        if room.host == request.user:
-            room.close()
+        # Check if all participants have left
+        remaining_participants = room.participants.filter(has_left=False)
+        remaining_count = remaining_participants.count()
+        
+        if remaining_count == 0:
+            # All participants have left - delete the room
+            room_name = room.name
+            room.delete()
             return Response(
-                {'message': 'You left the room. Room has been closed.'},
+                {'message': f'You left the room. Room "{room_name}" has been deleted as all participants left.'},
                 status=status.HTTP_200_OK
             )
+        
+        # If current user was the host, transfer host to remaining participant
+        if room.host == request.user and remaining_count > 0:
+            new_host = remaining_participants.first().user
+            room.host = new_host
+            room.status = 'waiting'  # Reset to waiting status for new host to invite others
+            room.save()
+            return Response(
+                {'message': f'You left the room. {new_host.username} is now the host.'},
+                status=status.HTTP_200_OK
+            )
+        
+        # Regular participant left, room status back to waiting
+        if room.status == 'ready':
+            room.status = 'waiting'
+            room.save()
         
         return Response(
             {'message': 'You left the room.'},
