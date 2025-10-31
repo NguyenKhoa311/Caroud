@@ -6,7 +6,7 @@ const matchmakingService = {
    */
   joinQueue: async () => {
     try {
-      const response = await api.post('/matchmaking/join/');
+      const response = await api.post('/api/matchmaking/join/');
       return response.data;
     } catch (error) {
       console.error('Error joining matchmaking:', error);
@@ -19,7 +19,7 @@ const matchmakingService = {
    */
   leaveQueue: async () => {
     try {
-      const response = await api.post('/matchmaking/leave/');
+      const response = await api.post('/api/matchmaking/leave/');
       return response.data;
     } catch (error) {
       console.error('Error leaving matchmaking:', error);
@@ -32,7 +32,7 @@ const matchmakingService = {
    */
   checkStatus: async () => {
     try {
-      const response = await api.get('/matchmaking/status/');
+      const response = await api.get('/api/matchmaking/status/');
       return response.data;
     } catch (error) {
       console.error('Error checking matchmaking status:', error);
@@ -45,7 +45,7 @@ const matchmakingService = {
    */
   getQueueInfo: async () => {
     try {
-      const response = await api.get('/matchmaking/queue_info/');
+      const response = await api.get('/api/matchmaking/queue_info/');
       return response.data;
     } catch (error) {
       console.error('Error getting queue info:', error);

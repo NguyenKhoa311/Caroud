@@ -26,7 +26,7 @@ import api from './api';
  */
 export const getRooms = async (filters = {}) => {
   try {
-    const response = await api.get('/users/rooms/', {
+    const response = await api.get('/api/users/rooms/', {
       params: filters
     });
     // Backend returns paginated response with 'results' array
@@ -48,7 +48,7 @@ export const getRooms = async (filters = {}) => {
  * const room = await roomService.getRoomByCode('abc-123-def');
  */
 export const getRoomByCode = async (code) => {
-  const response = await api.get(`/users/rooms/${code}/`);
+  const response = await api.get(`/api/users/rooms/${code}/`);
   return response.data;
 };
 
@@ -73,7 +73,7 @@ export const getRoomByCode = async (code) => {
  * // Share room.join_url to invite players
  */
 export const createRoom = async (roomData) => {
-  const response = await api.post('/users/rooms/', roomData);
+  const response = await api.post('/api/users/rooms/', roomData);
   return response.data;
 };
 
@@ -87,7 +87,7 @@ export const createRoom = async (roomData) => {
  * const room = await roomService.joinRoom('abc-123-def');
  */
 export const joinRoom = async (code) => {
-  const response = await api.post(`/users/rooms/${code}/join/`);
+  const response = await api.post(`/api/users/rooms/${code}/join/`);
   return response.data;
 };
 
@@ -102,7 +102,7 @@ export const joinRoom = async (code) => {
  * const room = await roomService.toggleReady('abc-123-def');
  */
 export const toggleReady = async (code) => {
-  const response = await api.post(`/users/rooms/${code}/ready/`);
+  const response = await api.post(`/api/users/rooms/${code}/ready/`);
   return response.data;
 };
 
@@ -119,7 +119,7 @@ export const toggleReady = async (code) => {
  * // Navigate to game page with match ID
  */
 export const startGame = async (code) => {
-  const response = await api.post(`/users/rooms/${code}/start/`);
+  const response = await api.post(`/api/users/rooms/${code}/start/`);
   return response.data;
 };
 
@@ -134,7 +134,7 @@ export const startGame = async (code) => {
  * await roomService.leaveRoom('abc-123-def');
  */
 export const leaveRoom = async (code) => {
-  const response = await api.post(`/users/rooms/${code}/leave/`);
+  const response = await api.post(`/api/users/rooms/${code}/leave/`);
   return response.data;
 };
 
@@ -148,7 +148,7 @@ export const leaveRoom = async (code) => {
  * await roomService.closeRoom('abc-123-def');
  */
 export const closeRoom = async (code) => {
-  const response = await api.delete(`/users/rooms/${code}/`);
+  const response = await api.delete(`/api/users/rooms/${code}/`);
   return response.data;
 };
 
@@ -163,7 +163,7 @@ export const closeRoom = async (code) => {
  */
 export const getInvitations = async (status = 'pending') => {
   try {
-    const response = await api.get('/users/rooms/invitations/', {
+    const response = await api.get('/api/users/rooms/invitations/', {
       params: { status }
     });
     return Array.isArray(response.data) ? response.data : [];
@@ -190,7 +190,7 @@ export const getInvitations = async (status = 'pending') => {
  * });
  */
 export const sendInvitation = async (inviteData) => {
-  const response = await api.post('/users/rooms/invitations/', inviteData);
+  const response = await api.post('/api/users/rooms/invitations/', inviteData);
   return response.data;
 };
 
@@ -207,7 +207,7 @@ export const sendInvitation = async (inviteData) => {
  * // Navigate to room lobby with room.code
  */
 export const acceptInvitation = async (invitationId) => {
-  const response = await api.post(`/users/rooms/invitations/${invitationId}/accept/`);
+  const response = await api.post(`/api/users/rooms/invitations/${invitationId}/accept/`);
   return response.data;
 };
 
@@ -221,7 +221,7 @@ export const acceptInvitation = async (invitationId) => {
  * await roomService.rejectInvitation(5);
  */
 export const rejectInvitation = async (invitationId) => {
-  const response = await api.post(`/users/rooms/invitations/${invitationId}/reject/`);
+  const response = await api.post(`/api/users/rooms/invitations/${invitationId}/reject/`);
   return response.data;
 };
 

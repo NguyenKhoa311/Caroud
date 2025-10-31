@@ -74,7 +74,14 @@ function GamePage() {
   const loadMatchData = async () => {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-      const response = await fetch(`http://localhost:8000/api/games/${matchId}/`, {
+      
+      // Auto-detect hostname
+      const hostname = window.location.hostname;
+      const apiUrl = hostname === 'localhost' || hostname === '127.0.0.1' 
+        ? 'http://localhost:8000' 
+        : `http://${hostname}:8000`;
+      
+      const response = await fetch(`${apiUrl}/api/games/${matchId}/`, {
         headers: {
           'Authorization': `Token ${token}`
         }
@@ -138,7 +145,11 @@ function GamePage() {
 
   const setupWebSocket = () => {
     const token = sessionStorage.getItem('token') || localStorage.getItem('token');
-    const wsUrl = `ws://localhost:8000/ws/game/${matchId}/?token=${token}`;
+    
+    // Automatically detect the correct WebSocket URL based on current hostname
+    const hostname = window.location.hostname;
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${hostname}:8000/ws/game/${matchId}/?token=${token}`;
     
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
@@ -190,18 +201,31 @@ function GamePage() {
           
           // Show ELO modal for online matches with ELO changes
           if (mode === 'online' && data.result.elo_changes && user) {
-            const myPlayerData = myPlayer === 'X' 
+            console.log('🎮 Game Over - Debug Info:');
+            console.log('  My Player:', myPlayer);
+            console.log('  Result:', data.result.result);
+            console.log('  ELO Changes:', data.result.elo_changes);
+            console.log('  User ID:', user.id);
+            
+            // Determine which player I am based on user_id (more reliable than myPlayer state)
+            const amIBlackPlayer = data.result.elo_changes.black_player.user_id === user.id;
+            const myPlayerData = amIBlackPlayer
               ? data.result.elo_changes.black_player 
               : data.result.elo_changes.white_player;
+            
+            console.log('  Am I Black Player?', amIBlackPlayer);
+            console.log('  My Player Data:', myPlayerData);
             
             if (myPlayerData) {
               // Determine match result from my perspective
               let myResult = 'draw';
               if (data.result.result === 'black_win') {
-                myResult = myPlayer === 'X' ? 'win' : 'loss';
+                myResult = amIBlackPlayer ? 'win' : 'loss';
               } else if (data.result.result === 'white_win') {
-                myResult = myPlayer === 'O' ? 'win' : 'loss';
+                myResult = amIBlackPlayer ? 'loss' : 'win';
               }
+              
+              console.log('  My Result:', myResult);
               
               setMatchResult(myResult);
               setEloData({

@@ -24,7 +24,7 @@
 
 // Authentication utility functions and hooks
 import { useState, useEffect } from 'react';
-import { getCurrentUser } from 'aws-amplify/auth';
+// import { getCurrentUser } from 'aws-amplify/auth'; // DISABLED until Cognito is configured
 
 /**
  * Custom React hook for authentication state management.
@@ -99,7 +99,9 @@ export const useAuth = () => {
         return;
       }
 
-      // Check for Cognito authentication (social login)
+      // DISABLED: Check for Cognito authentication (social login)
+      // Enable this after Cognito is fully configured
+      /*
       try {
         const currentUser = await getCurrentUser();
         setUser({
@@ -110,6 +112,10 @@ export const useAuth = () => {
         // No Cognito user, that's fine
         setUser(null);
       }
+      */
+      
+      // For now, if no token auth, user is not logged in
+      setUser(null);
     } catch (error) {
       console.error('Auth check error:', error);
       setUser(null);

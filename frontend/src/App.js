@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Amplify } from 'aws-amplify';
+// import { Amplify } from 'aws-amplify'; // DISABLED until Cognito is configured
 import './App.css';
 
 // Session management interceptor
@@ -24,6 +24,8 @@ import Navbar from './components/Navbar';
 import PrivateRoute from './components/PrivateRoute';
 
 // AWS Amplify Configuration (replace with your Cognito details)
+// TEMPORARILY DISABLED - Enable when testing Cognito OAuth
+/*
 Amplify.configure({
   Auth: {
     Cognito: {
@@ -43,6 +45,7 @@ Amplify.configure({
     },
   },
 });
+*/
 
 function App() {
   return (

@@ -73,7 +73,7 @@ class GameConsumer(AsyncWebsocketConsumer):
             player = data.get('player')
             
             # Make move in database
-            result = await self.make_move(row, col, player)
+            result = await database_sync_to_async(self.make_move_in_db)(row, col, player)
             
             # Broadcast move to room
             await self.channel_layer.group_send(

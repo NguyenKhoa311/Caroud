@@ -23,7 +23,7 @@ import api from './api';
  */
 export const getFriends = async () => {
   try {
-    const response = await api.get('/users/friends/list/');
+    const response = await api.get('/api/users/friends/list/');
     // Backend returns paginated response with 'results' array
     return Array.isArray(response.data?.results) ? response.data.results : 
            Array.isArray(response.data) ? response.data : [];
@@ -44,7 +44,7 @@ export const getFriends = async () => {
  */
 export const getReceivedRequests = async (status = 'pending') => {
   try {
-    const response = await api.get('/users/friends/requests/', {
+    const response = await api.get('/api/users/friends/requests/', {
       params: { status }
     });
     // Backend returns paginated response with 'results' array
@@ -67,7 +67,7 @@ export const getReceivedRequests = async (status = 'pending') => {
  */
 export const getSentRequests = async (status = 'pending') => {
   try {
-    const response = await api.get('/users/friends/requests/sent/', {
+    const response = await api.get('/api/users/friends/requests/sent/', {
       params: { status }
     });
     // Backend returns paginated response with 'results' array
@@ -90,7 +90,7 @@ export const getSentRequests = async (status = 'pending') => {
  * const request = await friendService.sendFriendRequest(2, "Let's play!");
  */
 export const sendFriendRequest = async (toUserId, message = '') => {
-  const response = await api.post('/users/friends/requests/', {
+  const response = await api.post('/api/users/friends/requests/', {
     to_user_id: toUserId,
     message
   });
@@ -108,7 +108,7 @@ export const sendFriendRequest = async (toUserId, message = '') => {
  * await friendService.acceptFriendRequest(5);
  */
 export const acceptFriendRequest = async (requestId) => {
-  const response = await api.post(`/users/friends/requests/${requestId}/accept/`);
+  const response = await api.post(`/api/users/friends/requests/${requestId}/accept/`);
   return response.data;
 };
 
@@ -122,7 +122,7 @@ export const acceptFriendRequest = async (requestId) => {
  * await friendService.rejectFriendRequest(5);
  */
 export const rejectFriendRequest = async (requestId) => {
-  const response = await api.post(`/users/friends/requests/${requestId}/reject/`);
+  const response = await api.post(`/api/users/friends/requests/${requestId}/reject/`);
   return response.data;
 };
 
@@ -136,7 +136,7 @@ export const rejectFriendRequest = async (requestId) => {
  * await friendService.cancelFriendRequest(5);
  */
 export const cancelFriendRequest = async (requestId) => {
-  const response = await api.delete(`/users/friends/requests/${requestId}/`);
+  const response = await api.delete(`/api/users/friends/requests/${requestId}/`);
   return response.data;
 };
 
@@ -156,7 +156,7 @@ export const searchUsers = async (query) => {
     throw new Error('Search query must be at least 2 characters');
   }
   
-  const response = await api.get('/users/friends/list/search/', {
+  const response = await api.get('/api/users/friends/list/search/', {
     params: { q: query }
   });
   return response.data;
@@ -172,7 +172,7 @@ export const searchUsers = async (query) => {
  */
 export const getInviteLinks = async () => {
   try {
-    const response = await api.get('/users/friends/invite-links/');
+    const response = await api.get('/api/users/friends/invite-links/');
     // Backend returns paginated response with 'results' array
     return Array.isArray(response.data?.results) ? response.data.results : 
            Array.isArray(response.data) ? response.data : [];
@@ -198,7 +198,7 @@ export const getInviteLinks = async () => {
  * // Use link.invite_url to share
  */
 export const createInviteLink = async (options = {}) => {
-  const response = await api.post('/users/friends/invite-links/', options);
+  const response = await api.post('/api/users/friends/invite-links/', options);
   return response.data;
 };
 
@@ -212,7 +212,7 @@ export const createInviteLink = async (options = {}) => {
  * await friendService.deactivateInviteLink('abc-123-def');
  */
 export const deactivateInviteLink = async (code) => {
-  const response = await api.delete(`/users/friends/invite-links/${code}/`);
+  const response = await api.delete(`/api/users/friends/invite-links/${code}/`);
   return response.data;
 };
 
@@ -227,7 +227,7 @@ export const deactivateInviteLink = async (code) => {
  * // Returns: { message: "...", friend: { username: "...", ... } }
  */
 export const acceptInviteLink = async (code) => {
-  const response = await api.post(`/users/friends/invite/${code}/`);
+  const response = await api.post(`/api/users/friends/invite/${code}/`);
   return response.data;
 };
 

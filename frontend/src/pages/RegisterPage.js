@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { setAuthData, useAuth } from '../utils/auth';
+import { getApiUrl } from '../utils/apiUrl';
 import './RegisterPage.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
+const API_URL = getApiUrl();
 
 function RegisterPage() {
   const navigate = useNavigate();

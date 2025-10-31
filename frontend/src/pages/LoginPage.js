@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signInWithRedirect } from 'aws-amplify/auth';
+// import { signInWithRedirect } from 'aws-amplify/auth'; // DISABLED until Cognito is fully configured
 import axios from 'axios';
 import { setAuthData, useAuth } from '../utils/auth';
+import { getApiUrl } from '../utils/apiUrl';
 import './LoginPage.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
+const API_URL = getApiUrl();
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -24,6 +25,8 @@ function LoginPage() {
     }
   }, [user, authLoading, navigate]);
 
+  // DISABLED - Enable after Cognito is configured
+  /*
   const handleGoogleSignIn = async () => {
     try {
       await signInWithRedirect({ provider: 'Google' });
@@ -39,6 +42,7 @@ function LoginPage() {
       console.error('Error signing in with Facebook:', error);
     }
   };
+  */
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -163,11 +167,12 @@ function LoginPage() {
             </button>
           </form>
           
+          {/* TEMPORARILY DISABLED - Enable after Cognito OAuth is fully configured */}
+          {/*
           <div className="divider">
             <span>OR</span>
           </div>
           
-          {/* Social Login Buttons */}
           <div className="login-buttons">
             <button onClick={handleGoogleSignIn} className="social-btn google-btn">
               <span className="btn-icon">🔍</span>
@@ -179,6 +184,7 @@ function LoginPage() {
               Continue with Facebook
             </button>
           </div>
+          */}
 
           <div className="register-link">
             Don't have an account? <Link to="/register">Create Account</Link>
