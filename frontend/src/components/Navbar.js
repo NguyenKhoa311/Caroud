@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'aws-amplify/auth';
 import { useAuth, clearAuthData } from '../utils/auth';
 import ConfirmModal from './ConfirmModal';
+import ThemeToggle from './ThemeToggle';
 import './Navbar.css';
 
 function Navbar() {
@@ -83,6 +84,9 @@ function Navbar() {
               )}
             </>
           )}
+          <li className="navbar-item">
+            <ThemeToggle />
+          </li>
         </ul>
       </div>
 

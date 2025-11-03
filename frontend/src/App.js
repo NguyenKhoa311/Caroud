@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 // import { Amplify } from 'aws-amplify'; // DISABLED until Cognito is configured
+import { ThemeProvider } from './contexts/ThemeContext';
 import './App.css';
 
 // Session management interceptor
@@ -49,9 +50,10 @@ Amplify.configure({
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Navbar />
+    <ThemeProvider>
+      <Router>
+        <div className="App">
+          <Navbar />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -67,7 +69,8 @@ function App() {
           <Route path="/room/:code" element={<PrivateRoute><RoomLobby /></PrivateRoute>} />
         </Routes>
       </div>
-    </Router>
+      </Router>
+    </ThemeProvider>
   );
 }
 
