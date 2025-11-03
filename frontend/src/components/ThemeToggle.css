@@ -1,0 +1,31 @@
+.theme-toggle {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  font-size: 24px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
+  margin-left: 12px;
+}
+
+.theme-toggle:hover {
+  background: var(--bg-tertiary);
+}
+
+.theme-toggle:focus {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+/* Disable hover effects on mobile */
+@media (hover: none) {
+  .theme-toggle:hover {
+    background: transparent;
+  }
+}
