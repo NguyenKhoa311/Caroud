@@ -12,6 +12,36 @@ import './GamePage.css';
 
 const BOARD_SIZE = 15;
 
+// Helper function to determine which player the current user is
+const determineMyPlayer = (matchData, userId) => {
+  if (!matchData || !userId) return null;
+  
+  if (matchData.black_player_detail?.id === userId) {
+    return 'X';
+  } else if (matchData.white_player_detail?.id === userId) {
+    return 'O';
+  }
+  
+  return null; // Spectator or not in match
+};
+
+// Helper function to update game status based on current state
+const getGameStatus = (myPlayer, currentTurn, gameOver, result) => {
+  if (gameOver) {
+    if (result === 'black_win') return 'Black wins! 🎉';
+    if (result === 'white_win') return 'White wins! 🎉';
+    return 'Draw! 🤝';
+  }
+  
+  if (!myPlayer) return '⏳ Loading...';
+  
+  if (myPlayer === currentTurn) {
+    return '🎯 Your turn!';
+  } else {
+    return '⏳ Waiting for opponent...';
+  }
+};
+
 function GamePage() {
   const { mode: paramMode } = useParams(); // local, online, ai from URL params
   const [searchParams] = useSearchParams();
@@ -60,6 +90,8 @@ function GamePage() {
 
   // Load match data and setup WebSocket for online mode
   useEffect(() => {
+    console.log('🎮 GamePage useEffect - mode:', mode, 'matchId:', matchId, 'currentMatchId:', currentMatchId);
+    
     if (mode === 'online' && matchId && !isInitialized && user) {
       console.log('Initializing online game...', matchId, 'User:', user.username);
       // Only load once when component mounts AND user is loaded
@@ -78,7 +110,7 @@ function GamePage() {
       if (!currentMatchId) {
         createAIMatch();
       }
-    } else {
+    } else if (mode === 'local') {
       setGameStatus('Local multiplayer mode');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -86,11 +118,12 @@ function GamePage() {
 
   const createAIMatch = async () => {
     try {
+      console.log('🤖 Creating AI match...');
       const match = await gameService.createGame('ai');
       setCurrentMatchId(match.id);
-      console.log('AI match created:', match.id);
+      console.log('✅ AI match created:', match.id);
     } catch (err) {
-      console.error('Error creating AI match:', err);
+      console.error('❌ Error creating AI match:', err);
     }
   };
 
@@ -177,14 +210,18 @@ function GamePage() {
       const data = await response.json();
       setMatchData(data);
       
-      // Determine which player I am
-      let myPlayerValue = null;
-      if (data.black_player_detail && data.black_player_detail.id === user.id) {
-        myPlayerValue = 'X';
-      } else if (data.white_player_detail && data.white_player_detail.id === user.id) {
-        myPlayerValue = 'O';
-      }
+      // Determine which player I am using helper function
+      const myPlayerValue = determineMyPlayer(data, user.id);
       setMyPlayer(myPlayerValue);
+      
+      console.log('✅ Loaded match data:', {
+        matchId: data.id,
+        mode: data.mode,
+        myPlayer: myPlayerValue,
+        currentTurn: data.current_turn,
+        blackPlayer: data.black_player_detail?.username,
+        whitePlayer: data.white_player_detail?.username
+      });
       
       setBlackPlayer(data.black_player_detail);
       setWhitePlayer(data.white_player_detail);
@@ -200,12 +237,9 @@ function GamePage() {
       
       setCurrentPlayer(data.current_turn);
       
-      // Set initial status based on turn
-      if (myPlayerValue === data.current_turn) {
-        setGameStatus('🎯 Your turn!');
-      } else {
-        setGameStatus('⏳ Waiting for opponent...');
-      }
+      // Set initial status using helper function
+      const status = getGameStatus(myPlayerValue, data.current_turn, data.status === 'completed', data.result);
+      setGameStatus(status);
       
       // Check if game is over
       if (data.status === 'completed') {
@@ -406,12 +440,9 @@ function GamePage() {
             }
           }
         } else {
-          // Update status based on whose turn it is
-          if (myPlayer === nextPlayer) {
-            setGameStatus('🎯 Your turn!');
-          } else {
-            setGameStatus('⏳ Waiting for opponent...');
-          }
+          // Game continues - update status using helper function
+          const status = getGameStatus(myPlayer, nextPlayer, false, null);
+          setGameStatus(status);
         }
       }
     };
@@ -462,6 +493,8 @@ function GamePage() {
   };
 
   const handleCellClick = async (row, col) => {
+    console.log('🎯 Cell clicked:', { row, col, mode, currentPlayer, gameOver, currentMatchId });
+    
     // For online mode, check if it's my turn
     if (mode === 'online') {
       if (gameOver || !matchId) return;
@@ -502,6 +535,74 @@ function GamePage() {
     // Local and AI mode logic
     if (board[row][col] || gameOver || isAIThinking) return;
 
+    // For AI mode, make move via API first
+    if (mode === 'ai' && currentMatchId) {
+      console.log('🎯 Player making move via API:', { row, col, player: currentPlayer });
+      
+      try {
+        // Send player move to backend
+        const moveResponse = await gameService.makeMove(currentMatchId, row, col);
+        console.log('✅ Player move response:', moveResponse);
+        
+        // Update board from backend response
+        setBoard(moveResponse.match.board_state);
+        setCurrentPlayer(moveResponse.match.current_turn);
+        
+        // Check if game over after player move
+        if (moveResponse.status === 'game_over') {
+          setGameOver(true);
+          setWinningLine(moveResponse.winning_line);
+          
+          if (moveResponse.result === 'black_win') {
+            setWinner('X');
+            setGameStatus('You win! 🎉');
+            setAIResult('win');
+            setTimeout(() => setShowAIResultModal(true), 1500);
+          } else if (moveResponse.result === 'draw') {
+            setGameStatus('Draw! 🤝');
+            setAIResult('draw');
+            setTimeout(() => setShowAIResultModal(true), 1500);
+          }
+          return;
+        }
+        
+        // Now it's AI's turn - call AI move
+        console.log('🤖 AI turn, calling getAIMove');
+        const aiResponse = await gameService.getAIMove(currentMatchId);
+        console.log('✅ AI move response:', aiResponse);
+        
+        // Update board with AI move
+        setBoard(aiResponse.match.board_state);
+        setCurrentPlayer(aiResponse.match.current_turn);
+        
+        // Check if AI won or draw
+        if (aiResponse.status === 'game_over') {
+          setGameOver(true);
+          
+          if (aiResponse.result === 'white_win') {
+            setWinner('O');
+            setWinningLine(aiResponse.winning_line);
+            setGameStatus('AI wins! 🤖');
+            setAIResult('loss');
+            setTimeout(() => setShowAIResultModal(true), 1500);
+          } else if (aiResponse.result === 'draw') {
+            setGameStatus('Draw! 🤝');
+            setAIResult('draw');
+            setTimeout(() => setShowAIResultModal(true), 1500);
+          }
+        } else {
+          setGameStatus('Your turn!');
+        }
+        
+      } catch (err) {
+        console.error('❌ Error in AI game:', err);
+        setGameStatus('Error occurred');
+      }
+      
+      return;
+    }
+
+    // Local mode - handle moves locally
     const newBoard = board.map(row => [...row]);
     newBoard[row][col] = currentPlayer;
     setBoard(newBoard);
@@ -512,24 +613,6 @@ function GamePage() {
       setWinner(currentPlayer);
       setGameOver(true);
       setGameStatus(`${currentPlayer === 'X' ? 'Black' : 'White'} wins! 🎉`);
-      
-      // Save game result for AI mode
-      if (mode === 'ai' && currentMatchId) {
-        try {
-          await gameService.saveGameResult(currentMatchId, {
-            result: currentPlayer === 'X' ? 'black_win' : 'white_win',
-            winning_line: winLine
-          });
-          
-          // Show AI result modal for player win
-          setAIResult('win');
-          setTimeout(() => {
-            setShowAIResultModal(true);
-          }, 1500);
-        } catch (err) {
-          console.error('Error saving game result:', err);
-        }
-      }
       return;
     }
 
@@ -538,75 +621,12 @@ function GamePage() {
     if (isFull) {
       setGameOver(true);
       setGameStatus('Draw! 🤝');
-      
-      // Save draw for AI mode
-      if (mode === 'ai' && currentMatchId) {
-        try {
-          await gameService.saveGameResult(currentMatchId, { result: 'draw' });
-          
-          // Show AI result modal for draw
-          setAIResult('draw');
-          setTimeout(() => {
-            setShowAIResultModal(true);
-          }, 1500);
-        } catch (err) {
-          console.error('Error saving game result:', err);
-        }
-      }
       return;
     }
 
-    // Switch player
+    // Switch player for local mode
     const nextPlayer = currentPlayer === 'X' ? 'O' : 'X';
     setCurrentPlayer(nextPlayer);
-
-    // AI move (call API instead of random logic)
-    if (mode === 'ai' && nextPlayer === 'O' && currentMatchId) {
-      setIsAIThinking(true);
-      setGameStatus('🤖 AI is thinking...');
-      
-      try {
-        const response = await gameService.getAIMove(currentMatchId);
-        
-        if (response.status === 'game_over') {
-          // AI won or draw
-          const aiBoard = response.match.board_state;
-          setBoard(aiBoard);
-          setGameOver(true);
-          
-          if (response.result === 'white_win') {
-            setWinner('O');
-            setWinningLine(response.winning_line);
-            setGameStatus('AI wins! 🤖');
-            
-            // Show AI result modal for AI win
-            setAIResult('loss');
-            setTimeout(() => {
-              setShowAIResultModal(true);
-            }, 1500);
-          } else if (response.result === 'draw') {
-            setGameStatus('Draw! 🤝');
-            
-            // Show AI result modal for draw
-            setAIResult('draw');
-            setTimeout(() => {
-              setShowAIResultModal(true);
-            }, 1500);
-          }
-        } else {
-          // AI made a move, continue game
-          const aiBoard = response.match.board_state;
-          setBoard(aiBoard);
-          setCurrentPlayer('X');
-          setGameStatus('Your turn!');
-        }
-      } catch (err) {
-        console.error('Error getting AI move:', err);
-        setGameStatus('AI error occurred');
-      } finally {
-        setIsAIThinking(false);
-      }
-    }
   };
 
   const handleRestart = () => {
@@ -681,10 +701,11 @@ function GamePage() {
           </p>
         </div>
 
-        {(isWaiting || isAIThinking) && !gameOver ? (
+        {/* Show waiting spinner only for matchmaking (not for AI mode) */}
+        {isWaiting && mode === 'online' && !gameOver ? (
           <div className="waiting-container">
             <div className="spinner"></div>
-            <p>{isAIThinking ? 'AI is thinking...' : 'Waiting...'}</p>
+            <p>Waiting for opponent...</p>
           </div>
         ) : (
           <Board 
@@ -701,6 +722,9 @@ function GamePage() {
             <button onClick={handleRestart} className="btn btn-primary">
               Play Again
             </button>
+            <button onClick={handleBackToDashboard} className="btn btn-secondary">
+              Back to Dashboard
+            </button>
           </div>
         )}
 
@@ -709,6 +733,7 @@ function GamePage() {
           <AIResultModal
             isOpen={showAIResultModal}
             onClose={handleRestart}
+            onBackToDashboard={handleBackToDashboard}
             result={aiResult}
           />
         )}

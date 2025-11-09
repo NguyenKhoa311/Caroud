@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.authentication import TokenAuthentication
 from django.shortcuts import get_object_or_404
 from .models import Match
 from ai.engine import get_ai_move
@@ -14,16 +15,28 @@ class GameViewSet(viewsets.ModelViewSet):
     """
     queryset = Match.objects.all()
     serializer_class = MatchSerializer
-    authentication_classes = []  # Disable authentication temporarily
-    permission_classes = []  # Disable permission checks temporarily
+    authentication_classes = [TokenAuthentication]  # Enable Token authentication
+    permission_classes = [AllowAny]  # Allow both authenticated and anonymous users
 
     def create(self, request):
         """Create a new game"""
         mode = request.data.get('mode', 'local')
         
+        # Determine black_player based on mode and authentication
+        black_player = None
+        if mode in ['online', 'ai']:
+            # For online/ai modes, require authenticated user
+            if request.user.is_authenticated:
+                black_player = request.user
+            else:
+                return Response(
+                    {'error': 'Authentication required for online/AI games'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+        
         match = Match.objects.create(
             mode=mode,
-            black_player=request.user if mode in ['online', 'ai'] else None,
+            black_player=black_player,
             status='waiting' if mode == 'online' else 'in_progress'
         )
         match.initialize_board()
@@ -54,6 +67,8 @@ class GameViewSet(viewsets.ModelViewSet):
                 result = 'black_win' if player == 'X' else 'white_win'
                 match.winning_line = winning_line
                 match.finish_game(result)
+                
+                print(f"🎮 PLAYER WON! Player: {player}, Result: {result}, Winning line: {winning_line}")
                 
                 return Response({
                     'status': 'game_over',
@@ -109,15 +124,20 @@ class GameViewSet(viewsets.ModelViewSet):
             return Response({'error': f'AI engine error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         try:
+            # Save AI player before make_move (because current_turn will switch)
+            ai_player = match.current_turn
+            
             # Apply AI move
-            match.make_move(row, col, match.current_turn)
+            match.make_move(row, col, ai_player)
 
-            # Check for winner
-            winning_line = match.check_winner(row, col, match.current_turn)
+            # Check for winner (use saved ai_player, not match.current_turn which switched)
+            winning_line = match.check_winner(row, col, ai_player)
             if winning_line:
-                result = 'black_win' if match.current_turn == 'X' else 'white_win'
+                result = 'black_win' if ai_player == 'X' else 'white_win'
                 match.winning_line = winning_line
                 match.finish_game(result)
+                
+                print(f"🎮 AI WON! Player: {ai_player}, Result: {result}, Winning line: {winning_line}")
 
                 return Response({
                     'status': 'game_over',

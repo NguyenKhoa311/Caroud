@@ -1,7 +1,7 @@
 import React from 'react';
 import './AIResultModal.css';
 
-function AIResultModal({ isOpen, onClose, result }) {
+function AIResultModal({ isOpen, onClose, onBackToDashboard, result }) {
   if (!isOpen) return null;
 
   const getResultContent = () => {
@@ -50,6 +50,12 @@ function AIResultModal({ isOpen, onClose, result }) {
             className="btn btn-primary"
           >
             Play Again
+          </button>
+          <button 
+            onClick={onBackToDashboard}
+            className="btn btn-secondary"
+          >
+            Back to Dashboard
           </button>
         </div>
       </div>

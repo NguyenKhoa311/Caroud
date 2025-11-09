@@ -129,6 +129,16 @@
   box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
 }
 
+.ai-result-modal .btn-secondary {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+}
+
+.ai-result-modal .btn-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(107, 114, 128, 0.4);
+}
+
 @media (max-width: 768px) {
   .ai-result-modal {
     padding: 40px 30px;
@@ -146,8 +156,14 @@
     font-size: 1rem;
   }
 
+  .ai-result-modal .modal-actions {
+    flex-direction: column;
+    gap: 10px;
+  }
+
   .ai-result-modal .btn {
     padding: 12px 30px;
     font-size: 1rem;
+    width: 100%;
   }
 }
