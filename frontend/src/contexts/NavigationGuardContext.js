@@ -16,13 +16,25 @@ export const NavigationGuardProvider = ({ children }) => {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [onConfirmCallback, setOnConfirmCallback] = useState(null);
   const [onLeaveCallback, setOnLeaveCallback] = useState(null); // Cleanup before navigation
+  const [modalConfig, setModalConfig] = useState({
+    title: 'Leave Game?',
+    message: 'You are in an active online game.',
+    warning: 'Leaving now will count as a loss!',
+    stayText: '❌ Stay in Game',
+    leaveText: '✅ Leave (Count as Loss)'
+  });
 
-  // Enable navigation blocking with optional cleanup callback
-  const enableBlocking = useCallback((leaveCallback) => {
+  // Enable navigation blocking with optional cleanup callback and custom modal
+  const enableBlocking = useCallback((leaveCallback, customModalConfig = {}) => {
     setIsBlocking(true);
     if (leaveCallback) {
       setOnLeaveCallback(() => leaveCallback);
     }
+    // Merge custom config with defaults
+    setModalConfig(prev => ({
+      ...prev,
+      ...customModalConfig
+    }));
   }, []);
 
   // Disable navigation blocking (called from GamePage when game ends)
@@ -30,6 +42,14 @@ export const NavigationGuardProvider = ({ children }) => {
     setIsBlocking(false);
     setShowConfirmModal(false);
     setPendingNavigation(null);
+    // Reset modal config to defaults
+    setModalConfig({
+      title: 'Leave Game?',
+      message: 'You are in an active online game.',
+      warning: 'Leaving now will count as a loss!',
+      stayText: '❌ Stay in Game',
+      leaveText: '✅ Leave (Count as Loss)'
+    });
   }, []);
 
   // Check if navigation should be blocked
@@ -95,10 +115,12 @@ export const NavigationGuardProvider = ({ children }) => {
         <div className="game-over-modal" style={{ zIndex: 10000 }}>
           <div className="modal-content">
             <div className="modal-icon">⚠️</div>
-            <h2 className="modal-title" style={{ color: '#ef4444' }}>Leave Game?</h2>
+            <h2 className="modal-title" style={{ color: '#ef4444' }}>{modalConfig.title}</h2>
             <p className="modal-message">
-              You are in an active online game. <br />
-              <strong style={{ color: '#ef4444' }}>Leaving now will count as a loss!</strong>
+              {modalConfig.message} <br />
+              {modalConfig.warning && (
+                <strong style={{ color: '#ef4444' }}>{modalConfig.warning}</strong>
+              )}
             </p>
             
             <div className="modal-actions">
@@ -107,13 +129,13 @@ export const NavigationGuardProvider = ({ children }) => {
                 className="btn btn-secondary btn-large"
                 style={{ marginRight: '15px' }}
               >
-                ❌ Stay in Game
+                {modalConfig.stayText}
               </button>
               <button 
                 onClick={confirmNavigation}
                 className="btn btn-danger btn-large"
               >
-                ✅ Leave (Count as Loss)
+                {modalConfig.leaveText}
               </button>
             </div>
           </div>

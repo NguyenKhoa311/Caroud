@@ -161,7 +161,7 @@ function ProfilePage() {
             <div className="stat-item">
               <span className="stat-label">Win Rate:</span>
               <span className="stat-value">
-                {stats?.win_rate ? (stats.win_rate * 100).toFixed(1) : '0.0'}%
+                {stats?.win_rate ? stats.win_rate.toFixed(1) : '0.0'}%
               </span>
             </div>
             <div className="stat-item">
@@ -174,10 +174,10 @@ function ProfilePage() {
             <div className="winrate-bar-large">
               <div 
                 className="winrate-fill-large" 
-                style={{ width: `${stats?.win_rate ? (stats.win_rate * 100) : 0}%` }}
+                style={{ width: `${stats?.win_rate || 0}%` }}
               >
                 <span className="winrate-label">
-                  {stats?.win_rate ? (stats.win_rate * 100).toFixed(1) : '0.0'}%
+                  {stats?.win_rate ? stats.win_rate.toFixed(1) : '0.0'}%
                 </span>
               </div>
             </div>
@@ -190,8 +190,10 @@ function ProfilePage() {
           {matchHistory.length > 0 ? (
             <div className="history-list">
               {matchHistory.map((match, index) => {
+                // Handle AI matches: winner can be 'AI' string
                 const isWinner = match.winner === authUser?.id;
-                const isDraw = match.winner === null;
+                const isAIWinner = match.winner === 'AI';
+                const isDraw = match.result === 'draw' || (!match.winner && !isAIWinner);
                 const result = isDraw ? 'draw' : (isWinner ? 'win' : 'loss');
                 
                 return (

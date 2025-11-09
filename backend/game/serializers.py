@@ -31,16 +31,22 @@ class MatchSerializer(serializers.ModelSerializer):
         if obj.result == 'black_win':
             return obj.black_player.id if obj.black_player else None
         elif obj.result == 'white_win':
+            # For AI mode, white_player is None (AI), so return a special indicator
+            if obj.mode == 'ai':
+                return 'AI'  # Return string 'AI' to indicate AI won
             return obj.white_player.id if obj.white_player else None
-        return None
+        return None  # Draw or no result yet
     
     def get_loser(self, obj):
         """Get loser user ID based on result"""
         if obj.result == 'black_win':
+            # For AI mode, white_player is None
+            if obj.mode == 'ai':
+                return 'AI'  # AI lost
             return obj.white_player.id if obj.white_player else None
         elif obj.result == 'white_win':
             return obj.black_player.id if obj.black_player else None
-        return None
+        return None  # Draw or no result yet
 
 
 class MakeMoveSerializer(serializers.Serializer):

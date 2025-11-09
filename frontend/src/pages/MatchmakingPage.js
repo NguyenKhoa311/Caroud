@@ -2,11 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import matchmakingService from '../services/matchmakingService';
 import { useAuth } from '../utils/auth';
+import { useNavigationGuard } from '../contexts/NavigationGuardContext';
 import './MatchmakingPage.css';
 
 function MatchmakingPage() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { enableBlocking, disableBlocking } = useNavigationGuard();
   const [status, setStatus] = useState('idle'); // idle, searching, matched, error
   const [matchData, setMatchData] = useState(null);
   const [waitingTime, setWaitingTime] = useState(0);
@@ -139,16 +141,42 @@ function MatchmakingPage() {
     };
   }, [status]);
 
-  // Auto-cancel when tab becomes hidden or page unloads
+  // Enable/disable navigation guard based on matchmaking status
   useEffect(() => {
-    // Handle page visibility change (tab switch)
-    const handleVisibilityChange = () => {
-      if (document.hidden && status === 'searching') {
-        console.log('Tab hidden while searching - canceling matchmaking');
-        handleCancelMatchmaking();
-      }
-    };
+    if (status === 'searching') {
+      // Enable blocking with cleanup callback and custom modal
+      enableBlocking(
+        (navigateTo) => {
+          console.log('🔴 User leaving matchmaking page - canceling queue and navigating to:', navigateTo);
+          // Cancel matchmaking first
+          matchmakingService.leaveQueue()
+            .then(() => {
+              console.log('✅ Queue left successfully, navigating...');
+              // Then navigate to destination
+              navigate(navigateTo);
+            })
+            .catch((error) => {
+              console.error('❌ Error leaving queue:', error);
+              // Navigate anyway even if API fails
+              navigate(navigateTo);
+            });
+        },
+        {
+          title: 'Leave Matchmaking?',
+          message: 'You are currently searching for a match.',
+          warning: 'Leaving now will cancel your search.',
+          stayText: '❌ Stay in Queue',
+          leaveText: '✅ Leave Queue'
+        }
+      );
+    } else {
+      // Disable blocking when not searching
+      disableBlocking();
+    }
+  }, [status, enableBlocking, disableBlocking, navigate]);
 
+  // Auto-cancel on page unload/refresh only (not tab switch)
+  useEffect(() => {
     // Handle page unload (close/refresh)
     const handleBeforeUnload = (e) => {
       if (status === 'searching') {
@@ -162,13 +190,11 @@ function MatchmakingPage() {
       }
     };
 
-    // Add event listeners
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Add event listener
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    // Cleanup listeners
+    // Cleanup listener
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [status]); // Re-run when status changes

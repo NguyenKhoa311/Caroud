@@ -127,8 +127,8 @@ class Match(models.Model):
                 self.white_elo_change = self.white_player.update_elo(
                     self.black_player.elo_rating, 'loss'
                 )
-                self.black_player.update_stats('win')
-                self.white_player.update_stats('loss')
+                self.black_player.update_stats('win', update_streak=True)
+                self.white_player.update_stats('loss', update_streak=True)
             elif result == 'white_win':
                 self.black_elo_change = self.black_player.update_elo(
                     self.white_player.elo_rating, 'loss'
@@ -136,8 +136,8 @@ class Match(models.Model):
                 self.white_elo_change = self.white_player.update_elo(
                     self.black_player.elo_rating, 'win'
                 )
-                self.black_player.update_stats('loss')
-                self.white_player.update_stats('win')
+                self.black_player.update_stats('loss', update_streak=True)
+                self.white_player.update_stats('win', update_streak=True)
             elif result == 'draw':
                 self.black_elo_change = self.black_player.update_elo(
                     self.white_player.elo_rating, 'draw'
@@ -145,8 +145,17 @@ class Match(models.Model):
                 self.white_elo_change = self.white_player.update_elo(
                     self.black_player.elo_rating, 'draw'
                 )
-                self.black_player.update_stats('draw')
-                self.white_player.update_stats('draw')
+                self.black_player.update_stats('draw', update_streak=True)
+                self.white_player.update_stats('draw', update_streak=True)
+        
+        # Update player stats for AI mode (no ELO changes, just win/loss/draw count, NO streak)
+        elif self.mode == 'ai' and self.black_player:
+            if result == 'black_win':
+                self.black_player.update_stats('win', update_streak=False)
+            elif result == 'white_win':
+                self.black_player.update_stats('loss', update_streak=False)
+            elif result == 'draw':
+                self.black_player.update_stats('draw', update_streak=False)
         
         self.save()
         
