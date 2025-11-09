@@ -22,6 +22,18 @@ if DEBUG:
 else:
     ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
+# Always include these hosts for CloudFront/Nginx integration
+ALLOWED_HOSTS.extend([
+    'api.caroud.click',
+    '13.215.198.23',
+    'localhost',
+    '127.0.0.1',
+])
+
+# Nginx reverse proxy settings
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Application definition
 INSTALLED_APPS = [
     'daphne',
@@ -168,9 +180,29 @@ else:
     CORS_ALLOWED_ORIGINS = [
         'http://localhost:3000',
         'http://127.0.0.1:3000',
-        # Add production domains here
+        'https://caroud.click',  # CloudFront production domain
+        'https://d3qvzoyja2mw99.cloudfront.net',  # CloudFront direct domain
     ]
+
+# Always allow these origins regardless of DEBUG mode
+CORS_ALLOWED_ORIGINS = list(set([
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://caroud.click',
+    'https://d3qvzoyja2mw99.cloudfront.net',
+]))
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # REST Framework
 REST_FRAMEWORK = {

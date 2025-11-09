@@ -1,17 +1,27 @@
 import axios from 'axios';
 
-// Automatically detect the correct API URL based on current hostname
+// Get API URL from environment variables
+// Development (.env): http://localhost:8000 or https://caroud.click
+// Production (.env.production): https://caroud.click
 const getApiBaseUrl = () => {
-  // Get the current hostname (localhost or IP address)
+  // Debug: Log environment variable
+  console.log('🔍 DEBUG - process.env.REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+  
+  // Use environment variable if set
+  if (process.env.REACT_APP_API_URL) {
+    console.log('✅ Using REACT_APP_API_URL from .env:', process.env.REACT_APP_API_URL);
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // Fallback: Auto-detect based on hostname (legacy behavior)
+  console.log('⚠️ REACT_APP_API_URL not found, using fallback hostname detection');
   const hostname = window.location.hostname;
   
-  // If accessing via network IP, use that IP for backend
-  // Otherwise use localhost
-  // Note: No /api suffix here because services already include it
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    console.log('🏠 Fallback: Using localhost:8000');
     return 'http://localhost:8000';
   } else {
-    // Use the same hostname as frontend with backend port 8000
+    console.log('🌐 Fallback: Using hostname:', hostname);
     return `http://${hostname}:8000`;
   }
 };

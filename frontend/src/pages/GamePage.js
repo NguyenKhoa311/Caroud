@@ -75,11 +75,9 @@ function GamePage() {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       
-      // Auto-detect hostname
-      const hostname = window.location.hostname;
-      const apiUrl = hostname === 'localhost' || hostname === '127.0.0.1' 
-        ? 'http://localhost:8000' 
-        : `http://${hostname}:8000`;
+      // Use environment variable for API URL
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+      console.log('✅ [GamePage.js] Loading match from:', apiUrl);
       
       const response = await fetch(`${apiUrl}/api/games/${matchId}/`, {
         headers: {

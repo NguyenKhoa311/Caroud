@@ -4,6 +4,14 @@
  * Note: Returns base URL without /api suffix (services add /api themselves)
  */
 export const getApiUrl = () => {
+  // Use environment variable first (supports both .env and .env.production)
+  if (process.env.REACT_APP_API_URL) {
+    console.log('✅ [apiUrl.js] Using REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // Fallback: Auto-detect based on hostname
+  console.log('⚠️ [apiUrl.js] REACT_APP_API_URL not found, using fallback');
   const hostname = window.location.hostname;
   
   // If accessing via localhost, use localhost for backend
@@ -19,6 +27,14 @@ export const getApiUrl = () => {
  * Get WebSocket URL
  */
 export const getWsUrl = () => {
+  // Use environment variable first
+  if (process.env.REACT_APP_WS_URL) {
+    console.log('✅ [apiUrl.js] Using REACT_APP_WS_URL:', process.env.REACT_APP_WS_URL);
+    return process.env.REACT_APP_WS_URL;
+  }
+  
+  // Fallback: Auto-detect based on hostname
+  console.log('⚠️ [apiUrl.js] REACT_APP_WS_URL not found, using fallback');
   const hostname = window.location.hostname;
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   
