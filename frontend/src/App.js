@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 // import { Amplify } from 'aws-amplify'; // DISABLED until Cognito is configured
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NavigationGuardProvider } from './contexts/NavigationGuardContext';
 import './App.css';
 
 // Session management interceptor
@@ -51,25 +52,27 @@ Amplify.configure({
 function App() {
   return (
     <ThemeProvider>
-      <Router>
-        <div className="App">
-          <Navbar />
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
-          <Route path="/game/:mode" element={<PrivateRoute><GamePage /></PrivateRoute>} />
-          <Route path="/game" element={<PrivateRoute><GamePage /></PrivateRoute>} />
-          <Route path="/matchmaking" element={<PrivateRoute><MatchmakingPage /></PrivateRoute>} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
-          <Route path="/friends" element={<PrivateRoute><FriendsPage /></PrivateRoute>} />
-          <Route path="/rooms" element={<PrivateRoute><RoomsPage /></PrivateRoute>} />
-          <Route path="/room/:code" element={<PrivateRoute><RoomLobby /></PrivateRoute>} />
-        </Routes>
-      </div>
-      </Router>
+      <NavigationGuardProvider>
+        <Router>
+          <div className="App">
+            <Navbar />
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
+            <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+            <Route path="/game/:mode" element={<PrivateRoute><GamePage /></PrivateRoute>} />
+            <Route path="/game" element={<PrivateRoute><GamePage /></PrivateRoute>} />
+            <Route path="/matchmaking" element={<PrivateRoute><MatchmakingPage /></PrivateRoute>} />
+            <Route path="/leaderboard" element={<LeaderboardPage />} />
+            <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+            <Route path="/friends" element={<PrivateRoute><FriendsPage /></PrivateRoute>} />
+            <Route path="/rooms" element={<PrivateRoute><RoomsPage /></PrivateRoute>} />
+            <Route path="/room/:code" element={<PrivateRoute><RoomLobby /></PrivateRoute>} />
+          </Routes>
+        </div>
+        </Router>
+      </NavigationGuardProvider>
     </ThemeProvider>
   );
 }

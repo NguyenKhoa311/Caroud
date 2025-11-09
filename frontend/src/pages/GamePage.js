@@ -2,9 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import Board from '../components/Board';
 import ELOChangeModal from '../components/ELOChangeModal';
+import AIResultModal from '../components/AIResultModal';
 import { gameService } from '../services/gameService';
 import roomService from '../services/roomService';
 import { useAuth } from '../utils/auth';
+import { useNavigationGuard } from '../contexts/NavigationGuardContext';
+import config from '../config/environment';
 import './GamePage.css';
 
 const BOARD_SIZE = 15;
@@ -18,6 +21,7 @@ function GamePage() {
   const roomCode = searchParams.get('roomCode'); // room code if started from room
   const mode = queryMode || paramMode; // Prefer query mode for matchmaking
   const { user } = useAuth();
+  const { enableBlocking, disableBlocking } = useNavigationGuard();
   
   const [board, setBoard] = useState(Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null)));
   const [currentPlayer, setCurrentPlayer] = useState('X');
@@ -26,18 +30,33 @@ function GamePage() {
   const [winningLine, setWinningLine] = useState(null);
   const [gameStatus, setGameStatus] = useState('');
   const [isWaiting, setIsWaiting] = useState(false);
+  const [isAIThinking, setIsAIThinking] = useState(false);
   const [matchData, setMatchData] = useState(null);
   const [myPlayer, setMyPlayer] = useState(null); // 'X' or 'O'
   const [blackPlayer, setBlackPlayer] = useState(null);
   const [whitePlayer, setWhitePlayer] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [currentMatchId, setCurrentMatchId] = useState(null); // For AI mode
   
   // ELO Modal state
   const [showELOModal, setShowELOModal] = useState(false);
   const [eloData, setEloData] = useState(null);
   const [matchResult, setMatchResult] = useState(null); // 'win', 'loss', 'draw'
+  
+  // AI Result Modal state
+  const [showAIResultModal, setShowAIResultModal] = useState(false);
+  const [aiResult, setAIResult] = useState(null); // 'win', 'loss', 'draw'
+  
+  // Track if game ended by disconnect
+  const [endedByDisconnect, setEndedByDisconnect] = useState(false);
+  
+  // Track if user is voluntarily leaving (to wait for ELO before navigating)
+  const [isLeavingGame, setIsLeavingGame] = useState(false);
+  const [showCalculatingELO, setShowCalculatingELO] = useState(false); // Loading screen
+  const pendingNavigationRef = useRef(null);
 
   const wsRef = useRef(null);
+  const navigationBlockedRef = useRef(false);
 
   // Load match data and setup WebSocket for online mode
   useEffect(() => {
@@ -55,11 +74,25 @@ function GamePage() {
       setIsWaiting(true);
     } else if (mode === 'ai') {
       setGameStatus('Playing against AI');
+      // Create AI match if not exists
+      if (!currentMatchId) {
+        createAIMatch();
+      }
     } else {
       setGameStatus('Local multiplayer mode');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, matchId, isInitialized, user]);
+
+  const createAIMatch = async () => {
+    try {
+      const match = await gameService.createGame('ai');
+      setCurrentMatchId(match.id);
+      console.log('AI match created:', match.id);
+    } catch (err) {
+      console.error('Error creating AI match:', err);
+    }
+  };
 
   // Separate cleanup effect
   useEffect(() => {
@@ -71,15 +104,69 @@ function GamePage() {
     };
   }, []); // Empty deps - only run on unmount
 
+  // Add beforeunload warning for online games in progress
+  useEffect(() => {
+    if (mode === 'online' && !gameOver && matchId) {
+      const handleBeforeUnload = (e) => {
+        e.preventDefault();
+        e.returnValue = 'You are in an active game. Leaving will count as a loss. Are you sure?';
+        return e.returnValue;
+      };
+
+      window.addEventListener('beforeunload', handleBeforeUnload);
+
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
+    }
+  }, [mode, gameOver, matchId]);
+
+  // Enable/disable navigation blocking for online games
+  useEffect(() => {
+    if (mode === 'online' && !gameOver && matchId) {
+      // Pass cleanup callback to handle voluntary leave
+      const cleanup = (navigateTo) => {
+        console.log('🔴 User is leaving voluntarily, showing calculating screen...');
+        setIsLeavingGame(true);
+        pendingNavigationRef.current = navigateTo;
+        
+        // Show "Calculating ELO..." screen immediately
+        setShowCalculatingELO(true);
+        
+        // Send leave_game message to backend
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({
+            type: 'leave_game'
+          }));
+          
+          console.log('🔴 Sent leave_game, waiting for ELO calculation...');
+        } else {
+          console.log('🔴 WebSocket not open, navigating immediately');
+          navigate(navigateTo);
+        }
+      };
+      
+      enableBlocking(cleanup);
+      console.log('Navigation blocking enabled');
+    } else {
+      disableBlocking();
+      console.log('Navigation blocking disabled');
+    }
+
+    // Cleanup on unmount
+    return () => {
+      disableBlocking();
+    };
+  }, [mode, gameOver, matchId, enableBlocking, disableBlocking, navigate]);
+
   const loadMatchData = async () => {
     try {
       const token = sessionStorage.getItem('token') || localStorage.getItem('token');
       
-      // Use environment variable for API URL
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-      console.log('✅ [GamePage.js] Loading match from:', apiUrl);
+      // Use centralized config for API URL
+      console.log('✅ [GamePage.js] Loading match from:', config.apiUrl);
       
-      const response = await fetch(`${apiUrl}/api/games/${matchId}/`, {
+      const response = await fetch(`${config.apiUrl}/api/games/${matchId}/`, {
         headers: {
           'Authorization': `Token ${token}`
         }
@@ -144,10 +231,10 @@ function GamePage() {
   const setupWebSocket = () => {
     const token = sessionStorage.getItem('token') || localStorage.getItem('token');
     
-    // Automatically detect the correct WebSocket URL based on current hostname
-    const hostname = window.location.hostname;
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//${hostname}:8000/ws/game/${matchId}/?token=${token}`;
+    // Use centralized config for WebSocket URL
+    const wsUrl = `${config.wsUrl}/game/${matchId}/?token=${token}`;
+    
+    console.log('🔌 [GamePage.js] Connecting WebSocket to:', wsUrl);
     
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
@@ -164,6 +251,84 @@ function GamePage() {
         if (data.data) {
           setBoard(data.data.board || Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null)));
           setCurrentPlayer(data.data.current_turn || 'X');
+        }
+      } else if (data.type === 'player_connected') {
+        console.log('Player connected:', data.user_id);
+      } else if (data.type === 'player_disconnected') {
+        // Opponent disconnected - handle game over
+        console.log('🎮 PLAYER DISCONNECTED EVENT:', {
+          disconnected_user_id: data.disconnected_user_id,
+          result: data.result,
+          elo_changes: data.elo_changes,
+          my_user_id: user?.id,
+          isLeavingGame: isLeavingGame
+        });
+        
+        if (data.result) {
+          setGameOver(true);
+          setEndedByDisconnect(true); // Mark that game ended by disconnect
+          
+          // Determine winner
+          if (data.result === 'black_win') {
+            setWinner('X');
+            setGameStatus('Black wins! 🎉 (Opponent disconnected)');
+          } else if (data.result === 'white_win') {
+            setWinner('O');
+            setGameStatus('White wins! 🎉 (Opponent disconnected)');
+          }
+          
+          // Show ELO modal if available
+          if (data.elo_changes && user) {
+            const amIBlackPlayer = data.elo_changes.black_player.user_id === user.id;
+            const myPlayerData = amIBlackPlayer
+              ? data.elo_changes.black_player 
+              : data.elo_changes.white_player;
+            
+            // Determine match result from my perspective
+            let myResult = 'draw';
+            if (data.result === 'black_win') {
+              myResult = amIBlackPlayer ? 'win' : 'loss';
+            } else if (data.result === 'white_win') {
+              myResult = amIBlackPlayer ? 'loss' : 'win';
+            }
+            
+            setMatchResult(myResult);
+            setEloData({
+              oldElo: myPlayerData.old_elo,
+              newElo: myPlayerData.new_elo,
+              change: myPlayerData.change,
+              oldRank: myPlayerData.old_rank,
+              newRank: myPlayerData.new_rank
+            });
+            
+            // Show modal immediately if user is leaving, otherwise delay
+            if (isLeavingGame) {
+              console.log('🔴 ELO calculated! Hiding calculating screen and showing ELO modal');
+              
+              // Hide calculating screen
+              setShowCalculatingELO(false);
+              
+              // Show ELO modal with real data
+              setShowELOModal(true);
+              
+              // Close WebSocket after receiving ELO data
+              setTimeout(() => {
+                if (wsRef.current) {
+                  console.log('🔴 Closing WebSocket after receiving ELO');
+                  wsRef.current.close();
+                }
+              }, 500);
+            } else {
+              setTimeout(() => {
+                setShowELOModal(true);
+              }, 1500);
+            }
+          } else if (isLeavingGame) {
+            // No ELO data but user is leaving - navigate immediately
+            console.log('🔴 No ELO data, navigating immediately');
+            const destination = pendingNavigationRef.current || '/dashboard';
+            navigate(destination);
+          }
         }
       } else if (data.type === 'move') {
         // Opponent made a move - use functional update to get latest board state
@@ -334,8 +499,8 @@ function GamePage() {
       return;
     }
     
-    // Local and AI mode logic (unchanged)
-    if (board[row][col] || gameOver || isWaiting) return;
+    // Local and AI mode logic
+    if (board[row][col] || gameOver || isAIThinking) return;
 
     const newBoard = board.map(row => [...row]);
     newBoard[row][col] = currentPlayer;
@@ -348,7 +513,23 @@ function GamePage() {
       setGameOver(true);
       setGameStatus(`${currentPlayer === 'X' ? 'Black' : 'White'} wins! 🎉`);
       
-      // TODO: Save game result to backend
+      // Save game result for AI mode
+      if (mode === 'ai' && currentMatchId) {
+        try {
+          await gameService.saveGameResult(currentMatchId, {
+            result: currentPlayer === 'X' ? 'black_win' : 'white_win',
+            winning_line: winLine
+          });
+          
+          // Show AI result modal for player win
+          setAIResult('win');
+          setTimeout(() => {
+            setShowAIResultModal(true);
+          }, 1500);
+        } catch (err) {
+          console.error('Error saving game result:', err);
+        }
+      }
       return;
     }
 
@@ -357,6 +538,21 @@ function GamePage() {
     if (isFull) {
       setGameOver(true);
       setGameStatus('Draw! 🤝');
+      
+      // Save draw for AI mode
+      if (mode === 'ai' && currentMatchId) {
+        try {
+          await gameService.saveGameResult(currentMatchId, { result: 'draw' });
+          
+          // Show AI result modal for draw
+          setAIResult('draw');
+          setTimeout(() => {
+            setShowAIResultModal(true);
+          }, 1500);
+        } catch (err) {
+          console.error('Error saving game result:', err);
+        }
+      }
       return;
     }
 
@@ -364,44 +560,52 @@ function GamePage() {
     const nextPlayer = currentPlayer === 'X' ? 'O' : 'X';
     setCurrentPlayer(nextPlayer);
 
-    // AI move
-    if (mode === 'ai' && nextPlayer === 'O') {
-      setIsWaiting(true);
-      setTimeout(() => {
-        makeAIMove(newBoard);
-        setIsWaiting(false);
-      }, 500);
-    }
-  };
-
-  const makeAIMove = (currentBoard) => {
-    // Simple AI: Find random empty cell
-    // TODO: Implement smarter AI logic
-    const emptyCells = [];
-    for (let i = 0; i < BOARD_SIZE; i++) {
-      for (let j = 0; j < BOARD_SIZE; j++) {
-        if (!currentBoard[i][j]) {
-          emptyCells.push([i, j]);
+    // AI move (call API instead of random logic)
+    if (mode === 'ai' && nextPlayer === 'O' && currentMatchId) {
+      setIsAIThinking(true);
+      setGameStatus('🤖 AI is thinking...');
+      
+      try {
+        const response = await gameService.getAIMove(currentMatchId);
+        
+        if (response.status === 'game_over') {
+          // AI won or draw
+          const aiBoard = response.match.board_state;
+          setBoard(aiBoard);
+          setGameOver(true);
+          
+          if (response.result === 'white_win') {
+            setWinner('O');
+            setWinningLine(response.winning_line);
+            setGameStatus('AI wins! 🤖');
+            
+            // Show AI result modal for AI win
+            setAIResult('loss');
+            setTimeout(() => {
+              setShowAIResultModal(true);
+            }, 1500);
+          } else if (response.result === 'draw') {
+            setGameStatus('Draw! 🤝');
+            
+            // Show AI result modal for draw
+            setAIResult('draw');
+            setTimeout(() => {
+              setShowAIResultModal(true);
+            }, 1500);
+          }
+        } else {
+          // AI made a move, continue game
+          const aiBoard = response.match.board_state;
+          setBoard(aiBoard);
+          setCurrentPlayer('X');
+          setGameStatus('Your turn!');
         }
+      } catch (err) {
+        console.error('Error getting AI move:', err);
+        setGameStatus('AI error occurred');
+      } finally {
+        setIsAIThinking(false);
       }
-    }
-
-    if (emptyCells.length > 0) {
-      const [row, col] = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-      const newBoard = currentBoard.map(row => [...row]);
-      newBoard[row][col] = 'O';
-      setBoard(newBoard);
-
-      const winLine = checkWinner(newBoard, row, col, 'O');
-      if (winLine) {
-        setWinningLine(winLine);
-        setWinner('O');
-        setGameOver(true);
-        setGameStatus('AI wins! 🤖');
-        return;
-      }
-
-      setCurrentPlayer('X');
     }
   };
 
@@ -411,24 +615,29 @@ function GamePage() {
     setGameOver(false);
     setWinner(null);
     setWinningLine(null);
+    setShowAIResultModal(false);
+    setAIResult(null);
     if (mode === 'local') {
       setGameStatus('Local multiplayer mode');
     } else if (mode === 'ai') {
       setGameStatus('Playing against AI');
+      // Create new AI match
+      createAIMatch();
     }
   };
 
   // Handle back to dashboard - leave room if from room
   const handleBackToDashboard = async () => {
+    // Leave room if applicable
     if (roomCode) {
       try {
-        // Leave room before navigating
         await roomService.leaveRoom(roomCode);
       } catch (err) {
         console.error('Error leaving room:', err);
-        // Navigate anyway even if leave fails
       }
     }
+    
+    // Navigation will be intercepted by NavigationGuard if game is in progress
     navigate('/dashboard');
   };
 
@@ -448,11 +657,21 @@ function GamePage() {
                 <span className="player-symbol">⚫ Black (X)</span>
                 <span className="player-name">{blackPlayer?.username || 'Loading...'}</span>
                 {myPlayer === 'X' && <span className="you-badge">(You)</span>}
+                {currentPlayer === 'X' && (
+                  <span className={`turn-indicator ${myPlayer === 'X' ? 'your-turn' : 'opponent-turn'}`}>
+                    {myPlayer === 'X' ? 'YOUR TURN' : 'OPPONENT TURN'}
+                  </span>
+                )}
               </div>
               <div className={`player-display ${currentPlayer === 'O' ? 'active' : ''}`}>
                 <span className="player-symbol">⚪ White (O)</span>
                 <span className="player-name">{whitePlayer?.username || 'Loading...'}</span>
                 {myPlayer === 'O' && <span className="you-badge">(You)</span>}
+                {currentPlayer === 'O' && (
+                  <span className={`turn-indicator ${myPlayer === 'O' ? 'your-turn' : 'opponent-turn'}`}>
+                    {myPlayer === 'O' ? 'YOUR TURN' : 'OPPONENT TURN'}
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -462,10 +681,10 @@ function GamePage() {
           </p>
         </div>
 
-        {isWaiting && !gameOver ? (
+        {(isWaiting || isAIThinking) && !gameOver ? (
           <div className="waiting-container">
             <div className="spinner"></div>
-            <p>Waiting...</p>
+            <p>{isAIThinking ? 'AI is thinking...' : 'Waiting...'}</p>
           </div>
         ) : (
           <Board 
@@ -485,31 +704,75 @@ function GamePage() {
           </div>
         )}
 
+        {/* AI Result Modal - Shows for AI mode */}
+        {mode === 'ai' && (
+          <AIResultModal
+            isOpen={showAIResultModal}
+            onClose={handleRestart}
+            result={aiResult}
+          />
+        )}
+
+        {/* Calculating ELO Screen - Shows when user leaves and waiting for backend */}
+        {showCalculatingELO && (
+          <div className="game-over-modal">
+            <div className="modal-content">
+              <div className="modal-icon">⏳</div>
+              <h2 className="modal-title">Đang tính điểm...</h2>
+              <p className="modal-message">
+                Vui lòng đợi trong giây lát
+              </p>
+              <div className="spinner-container" style={{ marginTop: '20px' }}>
+                <div className="spinner"></div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ELO Change Modal - Shows first for online matches */}
         {mode === 'online' && (
           <ELOChangeModal
             isOpen={showELOModal}
-            onClose={() => setShowELOModal(false)}
+            onClose={() => {
+              setShowELOModal(false);
+              
+              // If user was leaving voluntarily, navigate after showing ELO
+              if (isLeavingGame && pendingNavigationRef.current) {
+                console.log('🔴 ELO modal closed, navigating to:', pendingNavigationRef.current);
+                const destination = pendingNavigationRef.current;
+                pendingNavigationRef.current = null;
+                setIsLeavingGame(false);
+                navigate(destination);
+              }
+            }}
             matchResult={matchResult}
             eloData={eloData}
           />
         )}
 
         {/* Game Over Modal for Online Mode - Shows after ELO modal is closed */}
-        {gameOver && mode === 'online' && !showELOModal && (
+        {gameOver && mode === 'online' && !showELOModal && !isLeavingGame && (
           <div className="game-over-modal">
             <div className="modal-content">
               {winner === myPlayer ? (
                 <>
                   <div className="modal-icon winner">🎉</div>
                   <h2 className="modal-title winner">Victory!</h2>
-                  <p className="modal-message">Congratulations! You won the match!</p>
+                  <p className="modal-message">
+                    {endedByDisconnect 
+                      ? 'You won! Your opponent disconnected.' 
+                      : 'Congratulations! You won the match!'}
+                  </p>
                 </>
               ) : winner && winner !== myPlayer ? (
                 <>
                   <div className="modal-icon loser">😔</div>
                   <h2 className="modal-title loser">Defeat</h2>
-                  <p className="modal-message">Better luck next time!</p>
+                  <p className="modal-message">
+                    {endedByDisconnect
+                      ? 'You lost by disconnection.'
+                      : 'Better luck next time!'}
+                  </p>
                 </>
               ) : (
                 <>

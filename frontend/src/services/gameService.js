@@ -20,8 +20,8 @@ export const gameService = {
   },
 
   // Get AI move
-  getAIMove: async (gameId) => {
-    const response = await api.post(`/api/games/${gameId}/ai-move/`);
+  getAIMove: async (gameId, difficulty = 'medium') => {
+    const response = await api.post(`/api/games/${gameId}/ai_move/`, { difficulty });
     return response.data;
   },
 

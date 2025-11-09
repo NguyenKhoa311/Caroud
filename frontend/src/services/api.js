@@ -1,29 +1,10 @@
 import axios from 'axios';
+import config from '../config/environment';
 
-// Get API URL from environment variables
-// Development (.env): http://localhost:8000 or https://caroud.click
-// Production (.env.production): https://caroud.click
+// Get API URL from centralized config
 const getApiBaseUrl = () => {
-  // Debug: Log environment variable
-  console.log('🔍 DEBUG - process.env.REACT_APP_API_URL:', process.env.REACT_APP_API_URL);
-  
-  // Use environment variable if set
-  if (process.env.REACT_APP_API_URL) {
-    console.log('✅ Using REACT_APP_API_URL from .env:', process.env.REACT_APP_API_URL);
-    return process.env.REACT_APP_API_URL;
-  }
-  
-  // Fallback: Auto-detect based on hostname (legacy behavior)
-  console.log('⚠️ REACT_APP_API_URL not found, using fallback hostname detection');
-  const hostname = window.location.hostname;
-  
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    console.log('🏠 Fallback: Using localhost:8000');
-    return 'http://localhost:8000';
-  } else {
-    console.log('🌐 Fallback: Using hostname:', hostname);
-    return `http://${hostname}:8000`;
-  }
+  console.log('🔗 API Base URL:', config.apiUrl);
+  return config.apiUrl;
 };
 
 const api = axios.create({
@@ -38,8 +19,10 @@ api.interceptors.request.use(
     // Set baseURL dynamically for each request
     config.baseURL = getApiBaseUrl();
     
-    // Debug: Log the API URL being used
-    console.log('🔗 API Request:', config.method?.toUpperCase(), config.baseURL + (config.url || ''));
+    // Debug: Log the API URL being used in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔗 API Request:', config.method?.toUpperCase(), config.baseURL + (config.url || ''));
+    }
     
     // Get token from sessionStorage (for email/password auth)
     const token = sessionStorage.getItem('token');

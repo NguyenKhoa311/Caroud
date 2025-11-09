@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signOut } from 'aws-amplify/auth';
 import { useAuth, clearAuthData } from '../utils/auth';
+import { useNavigationGuard } from '../contexts/NavigationGuardContext';
 import ConfirmModal from './ConfirmModal';
 import ThemeToggle from './ThemeToggle';
 import './Navbar.css';
@@ -9,7 +10,23 @@ import './Navbar.css';
 function Navbar() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { requestNavigation } = useNavigationGuard();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  // Handle navigation with guard check
+  const handleNavigation = (e, path) => {
+    e.preventDefault();
+    
+    // Check if navigation is blocked
+    const allowed = requestNavigation(path, () => {
+      navigate(path);
+    });
+    
+    // If not blocked, navigate immediately
+    if (allowed) {
+      navigate(path);
+    }
+  };
 
   const handleSignOutClick = () => {
     setShowLogoutModal(true);
@@ -41,16 +58,16 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        <Link to="/" className="navbar-logo">
+        <Link to="/" onClick={(e) => handleNavigation(e, '/')} className="navbar-logo">
           🎮 Caro Game
         </Link>
         
         <ul className="navbar-menu">
           <li className="navbar-item">
-            <Link to="/" className="navbar-link">Home</Link>
+            <Link to="/" onClick={(e) => handleNavigation(e, '/')} className="navbar-link">Home</Link>
           </li>
           <li className="navbar-item">
-            <Link to="/leaderboard" className="navbar-link">Leaderboard</Link>
+            <Link to="/leaderboard" onClick={(e) => handleNavigation(e, '/leaderboard')} className="navbar-link">Leaderboard</Link>
           </li>
           
           {!loading && (
@@ -58,13 +75,13 @@ function Navbar() {
               {user ? (
                 <>
                   <li className="navbar-item">
-                    <Link to="/friends" className="navbar-link">👥 Friends</Link>
+                    <Link to="/friends" onClick={(e) => handleNavigation(e, '/friends')} className="navbar-link">👥 Friends</Link>
                   </li>
                   <li className="navbar-item">
-                    <Link to="/rooms" className="navbar-link">🏠 Rooms</Link>
+                    <Link to="/rooms" onClick={(e) => handleNavigation(e, '/rooms')} className="navbar-link">🏠 Rooms</Link>
                   </li>
                   <li className="navbar-item">
-                    <Link to="/profile" className="navbar-link">Profile</Link>
+                    <Link to="/profile" onClick={(e) => handleNavigation(e, '/profile')} className="navbar-link">Profile</Link>
                   </li>
                   <li className="navbar-item navbar-user">
                     <span className="navbar-username">👤 {user.username}</span>
@@ -77,7 +94,7 @@ function Navbar() {
                 </>
               ) : (
                 <li className="navbar-item">
-                  <Link to="/login" className="navbar-btn navbar-btn-primary">
+                  <Link to="/login" onClick={(e) => handleNavigation(e, '/login')} className="navbar-btn navbar-btn-primary">
                     Login
                   </Link>
                 </li>

@@ -149,3 +149,20 @@ class Match(models.Model):
                 self.white_player.update_stats('draw')
         
         self.save()
+        
+        # Auto-delete room if game was started from a room
+        self._cleanup_room_after_game()
+    
+    def _cleanup_room_after_game(self):
+        """Delete the room after game finishes (for friend matches)"""
+        try:
+            from users.room_models import GameRoom
+            
+            # Find room associated with this match
+            room = GameRoom.objects.filter(game=self).first()
+            if room:
+                # Delete the room since game is finished
+                room.delete()
+                print(f"✅ Room {room.code} deleted after game {self.id} finished")
+        except Exception as e:
+            print(f"⚠️ Error cleaning up room after game: {e}")
