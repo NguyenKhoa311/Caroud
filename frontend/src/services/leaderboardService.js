@@ -7,6 +7,12 @@ export const leaderboardService = {
    * @param {number} limit - (Hiện chưa dùng) Giới hạn
    * @returns {Promise<Array<Object>>} - Một mảng các đối tượng player
    */
+  /**
+   * Lấy bảng xếp hạng từ API
+   * @param {string} filter - (Hiện chưa dùng) Bộ lọc
+   * @param {number} limit - (Hiện chưa dùng) Giới hạn
+   * @returns {Promise<Array<Object>>} - Một mảng các đối tượng player
+   */
   getLeaderboard: async (filter = 'all', limit = 50) => {
     const url = "https://pnqee3jt84.execute-api.ap-southeast-1.amazonaws.com/dev/";
 

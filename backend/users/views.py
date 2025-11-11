@@ -991,7 +991,10 @@ class GameRoomViewSet(viewsets.ModelViewSet):
                 Q(participants__user=self.request.user, participants__has_left=False)
             ).distinct()
         
-        if status_filter:
+        # Exclude finished and closed rooms by default
+        if not status_filter:
+            queryset = queryset.exclude(status__in=['finished', 'closed'])
+        elif status_filter:
             queryset = queryset.filter(status=status_filter)
         
         return queryset.select_related('host').prefetch_related(
@@ -1003,15 +1006,18 @@ class GameRoomViewSet(viewsets.ModelViewSet):
         List rooms and automatically clean up empty rooms.
         
         Empty rooms (all participants left) are deleted automatically.
+        Finished rooms are also cleaned up.
         """
         queryset = self.get_queryset()
         
-        # Clean up empty rooms before listing
+        # Clean up empty rooms and finished rooms before listing
         rooms_to_delete = []
         for room in queryset:
+            # Delete finished rooms (game completed)
+            if room.status in ['finished', 'closed']:
+                rooms_to_delete.append(room.id)
             # Check if all participants have left
-            active_participants = room.participants.filter(has_left=False).count()
-            if active_participants == 0:
+            elif room.participants.filter(has_left=False).count() == 0:
                 rooms_to_delete.append(room.id)
         
         # Delete empty rooms

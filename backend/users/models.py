@@ -42,19 +42,28 @@ class User(AbstractUser):
             return 0
         return (self.wins / self.total_games) * 100
 
-    def update_stats(self, result):
-        """Update user statistics after a game"""
+    def update_stats(self, result, update_streak=True):
+        """
+        Update user statistics after a game
+        
+        Args:
+            result: 'win', 'loss', or 'draw'
+            update_streak: Whether to update streak (True for online, False for AI/local)
+        """
         if result == 'win':
             self.wins += 1
-            self.current_streak += 1
-            if self.current_streak > self.best_streak:
-                self.best_streak = self.current_streak
+            if update_streak:
+                self.current_streak += 1
+                if self.current_streak > self.best_streak:
+                    self.best_streak = self.current_streak
         elif result == 'loss':
             self.losses += 1
-            self.current_streak = 0
+            if update_streak:
+                self.current_streak = 0
         elif result == 'draw':
             self.draws += 1
-            self.current_streak = 0
+            if update_streak:
+                self.current_streak = 0
         self.save()
 
     def update_elo(self, opponent_elo, result):

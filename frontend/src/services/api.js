@@ -1,19 +1,10 @@
 import axios from 'axios';
+import config from '../config/environment';
 
-// Automatically detect the correct API URL based on current hostname
+// Get API URL from centralized config
 const getApiBaseUrl = () => {
-  // Get the current hostname (localhost or IP address)
-  const hostname = window.location.hostname;
-  
-  // If accessing via network IP, use that IP for backend
-  // Otherwise use localhost
-  // Note: No /api suffix here because services already include it
-  if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:8000';
-  } else {
-    // Use the same hostname as frontend with backend port 8000
-    return `http://${hostname}:8000`;
-  }
+  console.log('🔗 API Base URL:', config.apiUrl);
+  return config.apiUrl;
 };
 
 const api = axios.create({
@@ -28,8 +19,10 @@ api.interceptors.request.use(
     // Set baseURL dynamically for each request
     config.baseURL = getApiBaseUrl();
     
-    // Debug: Log the API URL being used
-    console.log('🔗 API Request:', config.method?.toUpperCase(), config.baseURL + (config.url || ''));
+    // Debug: Log the API URL being used in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔗 API Request:', config.method?.toUpperCase(), config.baseURL + (config.url || ''));
+    }
     
     // Get token from sessionStorage (for email/password auth)
     const token = sessionStorage.getItem('token');

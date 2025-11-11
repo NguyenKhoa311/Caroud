@@ -2,8 +2,10 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.authentication import TokenAuthentication
 from django.shortcuts import get_object_or_404
 from .models import Match
+from ai.engine import get_ai_move
 from .serializers import MatchSerializer, MakeMoveSerializer, GameResultSerializer
 
 
@@ -13,16 +15,28 @@ class GameViewSet(viewsets.ModelViewSet):
     """
     queryset = Match.objects.all()
     serializer_class = MatchSerializer
-    authentication_classes = []  # Disable authentication temporarily
-    permission_classes = []  # Disable permission checks temporarily
+    authentication_classes = [TokenAuthentication]  # Enable Token authentication
+    permission_classes = [AllowAny]  # Allow both authenticated and anonymous users
 
     def create(self, request):
         """Create a new game"""
         mode = request.data.get('mode', 'local')
         
+        # Determine black_player based on mode and authentication
+        black_player = None
+        if mode in ['online', 'ai']:
+            # For online/ai modes, require authenticated user
+            if request.user.is_authenticated:
+                black_player = request.user
+            else:
+                return Response(
+                    {'error': 'Authentication required for online/AI games'},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+        
         match = Match.objects.create(
             mode=mode,
-            black_player=request.user if mode in ['online', 'ai'] else None,
+            black_player=black_player,
             status='waiting' if mode == 'online' else 'in_progress'
         )
         match.initialize_board()
@@ -53,6 +67,8 @@ class GameViewSet(viewsets.ModelViewSet):
                 result = 'black_win' if player == 'X' else 'white_win'
                 match.winning_line = winning_line
                 match.finish_game(result)
+                
+                print(f"🎮 PLAYER WON! Player: {player}, Result: {result}, Winning line: {winning_line}")
                 
                 return Response({
                     'status': 'game_over',
@@ -90,27 +106,63 @@ class GameViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # TODO: Implement AI logic
-        # For now, return random empty cell
-        import random
-        empty_cells = []
-        for i, row in enumerate(match.board_state):
-            for j, cell in enumerate(row):
-                if cell is None:
-                    empty_cells.append((i, j))
-        
-        if not empty_cells:
+        # Use AI engine to compute move
+        difficulty = request.data.get('difficulty', 'medium')
+
+        # If board is full, return error
+        empty_exists = any(cell is None for r in match.board_state for cell in r)
+        if not empty_exists:
             return Response(
                 {'error': 'No empty cells'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
-        row, col = random.choice(empty_cells)
-        
-        return Response({
-            'row': row,
-            'col': col
-        })
+
+        # Get AI move (AI should play the current_turn symbol)
+        try:
+            row, col = get_ai_move(match.board_state, difficulty, ai_player=match.current_turn)
+        except Exception as e:
+            return Response({'error': f'AI engine error: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        try:
+            # Save AI player before make_move (because current_turn will switch)
+            ai_player = match.current_turn
+            
+            # Apply AI move
+            match.make_move(row, col, ai_player)
+
+            # Check for winner (use saved ai_player, not match.current_turn which switched)
+            winning_line = match.check_winner(row, col, ai_player)
+            if winning_line:
+                result = 'black_win' if ai_player == 'X' else 'white_win'
+                match.winning_line = winning_line
+                match.finish_game(result)
+                
+                print(f"🎮 AI WON! Player: {ai_player}, Result: {result}, Winning line: {winning_line}")
+
+                return Response({
+                    'status': 'game_over',
+                    'result': result,
+                    'winning_line': winning_line,
+                    'match': MatchSerializer(match).data
+                })
+
+            # Check for draw
+            is_full = all(all(cell is not None for cell in row) for row in match.board_state)
+            if is_full:
+                match.finish_game('draw')
+                return Response({
+                    'status': 'game_over',
+                    'result': 'draw',
+                    'match': MatchSerializer(match).data
+                })
+
+            return Response({
+                'status': 'success',
+                'match': MatchSerializer(match).data,
+                'move': {'row': row, 'col': col}
+            })
+        except ValueError as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])
     def result(self, request, pk=None):

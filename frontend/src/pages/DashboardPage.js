@@ -166,9 +166,9 @@ function DashboardPage() {
             <div className="stat-icon">📊</div>
             <div className="stat-value">
               {stats?.win_rate !== undefined 
-                ? `${(stats.win_rate * 100).toFixed(1)}%` 
+                ? `${stats.win_rate.toFixed(1)}%` 
                 : user?.win_rate !== undefined
-                ? `${(user.win_rate * 100).toFixed(1)}%`
+                ? `${user.win_rate.toFixed(1)}%`
                 : '0%'}
             </div>
             <div className="stat-label">Win Rate</div>
