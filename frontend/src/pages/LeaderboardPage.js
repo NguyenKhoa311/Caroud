@@ -11,19 +11,18 @@ function LeaderboardPage() {
     fetchLeaderboard();
   }, [filter]);
 
-  const fetchLeaderboard = async () => {
-    try {
-      setLoading(true);
-      // Fetch real leaderboard data from API
-      const data = await leaderboardService.getLeaderboard(filter);
-      setPlayers(data);
-    } catch (error) {
-      console.error('Failed to fetch leaderboard:', error);
-      setPlayers([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+const fetchLeaderboard = async () => {
+  try {
+    setLoading(true);
+    const data = await leaderboardService.getLeaderboard();
+    setPlayers(data);
+  } catch (error) {
+    console.error('Không thể tải bảng xếp hạng:', error.message);
+    setPlayers([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const getRankColor = (rank) => {
     if (rank === 1) return '#FFD700'; // Gold
