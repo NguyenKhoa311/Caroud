@@ -13,22 +13,24 @@
 }
 
 .register-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 20px;
   padding: 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .register-card h1 {
   text-align: center;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 10px;
   font-size: 32px;
 }
 
 .register-subtitle {
   text-align: center;
-  color: #666;
+  color: var(--text-secondary);
   margin-bottom: 30px;
   font-size: 14px;
 }
@@ -46,31 +48,38 @@
 
 .form-group label {
   font-weight: 600;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 8px;
   font-size: 14px;
 }
 
 .form-group input {
   padding: 12px 16px;
-  border: 2px solid #e0e0e0;
+  border: 2px solid var(--border-color);
   border-radius: 10px;
   font-size: 15px;
   transition: all 0.3s ease;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--accent-color);
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background: var(--bg-primary);
+}
+
+[data-theme='dark'] .form-group input:focus {
+  box-shadow: 0 0 0 3px rgba(139, 158, 255, 0.2);
 }
 
 .form-group input.error {
-  border-color: #e74c3c;
+  border-color: var(--error-color);
 }
 
 .error-text {
-  color: #e74c3c;
+  color: var(--error-color);
   font-size: 13px;
   margin-top: 5px;
 }
@@ -85,21 +94,31 @@
 }
 
 .success-message {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background-color: rgba(212, 237, 218, 0.9);
+  color: var(--success-color);
+  border: 1px solid rgba(195, 230, 203, 0.5);
+}
+
+[data-theme='dark'] .success-message {
+  background-color: rgba(76, 175, 80, 0.15);
+  border-color: rgba(76, 175, 80, 0.3);
 }
 
 .error-message {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background-color: rgba(248, 215, 218, 0.9);
+  color: var(--error-color);
+  border: 1px solid rgba(245, 198, 203, 0.5);
+}
+
+[data-theme='dark'] .error-message {
+  background-color: rgba(220, 53, 69, 0.15);
+  border-color: rgba(220, 53, 69, 0.3);
 }
 
 .register-btn {
   padding: 14px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+  color: var(--bg-primary);
   border: none;
   border-radius: 10px;
   font-size: 16px;
@@ -114,6 +133,10 @@
   box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
 }
 
+[data-theme='dark'] .register-btn:hover:not(:disabled) {
+  box-shadow: 0 10px 25px rgba(139, 158, 255, 0.3);
+}
+
 .register-btn:active:not(:disabled) {
   transform: translateY(0);
 }
@@ -126,12 +149,12 @@
 .login-link {
   text-align: center;
   margin-top: 20px;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 .login-link a {
-  color: #667eea;
+  color: var(--accent-color);
   text-decoration: none;
   font-weight: 600;
 }
