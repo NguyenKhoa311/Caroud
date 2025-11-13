@@ -203,10 +203,6 @@
 
 // export default LoginPage;
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 71acc3524d00547d9cf1ef2f2e73e3fa3836cb5a
 import React, { useEffect } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
@@ -249,9 +245,6 @@ function LoginPage() {
   );
 }
 
-<<<<<<< HEAD
-export default LoginPage;
-=======
 export default LoginPage;
 
 
@@ -275,4 +268,3 @@ export default LoginPage;
 // }
 
 // export default LoginPage;
->>>>>>> 71acc3524d00547d9cf1ef2f2e73e3fa3836cb5a

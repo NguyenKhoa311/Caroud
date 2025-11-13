@@ -460,10 +460,6 @@ export const useAuth = () => {
       window.removeEventListener("auth-change", handleAuthChange);
       window.removeEventListener("storage", handleStorageChange);
     };
-<<<<<<< HEAD
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-=======
->>>>>>> 71acc3524d00547d9cf1ef2f2e73e3fa3836cb5a
   }, [oidcAuth.isAuthenticated, oidcAuth.user]);
 
   return {
@@ -474,8 +470,4 @@ export const useAuth = () => {
     logout: () => oidcAuth.signoutRedirect?.(),
     refreshAuth: () => checkAuth(),
   };
-<<<<<<< HEAD
 };
-=======
-};
->>>>>>> 71acc3524d00547d9cf1ef2f2e73e3fa3836cb5a

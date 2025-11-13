@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { NavigationGuardProvider } from "./contexts/NavigationGuardContext";
 import "./App.css";
 import "./utils/sessionInterceptor";
 
@@ -39,34 +40,34 @@ function AuthWatcher() {
 }
 
 function App() {
-  const auth = useAuth();
-
   return (
     <ThemeProvider>
-      <Router>
-        <div className="App">
-          <Navbar />
+      <NavigationGuardProvider>
+        <Router>
+          <div className="App">
+            <Navbar />
 
-          {/* global auth state watcher */}
-          <AuthWatcher />
+            {/* global auth state watcher */}
+            <AuthWatcher />
 
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
 
-            <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
-            <Route path="/game/:mode" element={<PrivateRoute><GamePage /></PrivateRoute>} />
-            <Route path="/game" element={<PrivateRoute><GamePage /></PrivateRoute>} />
-            <Route path="/matchmaking" element={<PrivateRoute><MatchmakingPage /></PrivateRoute>} />
-            <Route path="/leaderboard" element={<LeaderboardPage />} />
-            <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
-            <Route path="/friends" element={<PrivateRoute><FriendsPage /></PrivateRoute>} />
-            <Route path="/rooms" element={<PrivateRoute><RoomsPage /></PrivateRoute>} />
-            <Route path="/room/:code" element={<PrivateRoute><RoomLobby /></PrivateRoute>} />
-          </Routes>
-        </div>
-      </Router>
+              <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+              <Route path="/game/:mode" element={<PrivateRoute><GamePage /></PrivateRoute>} />
+              <Route path="/game" element={<PrivateRoute><GamePage /></PrivateRoute>} />
+              <Route path="/matchmaking" element={<PrivateRoute><MatchmakingPage /></PrivateRoute>} />
+              <Route path="/leaderboard" element={<LeaderboardPage />} />
+              <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
+              <Route path="/friends" element={<PrivateRoute><FriendsPage /></PrivateRoute>} />
+              <Route path="/rooms" element={<PrivateRoute><RoomsPage /></PrivateRoute>} />
+              <Route path="/room/:code" element={<PrivateRoute><RoomLobby /></PrivateRoute>} />
+            </Routes>
+          </div>
+        </Router>
+      </NavigationGuardProvider>
     </ThemeProvider>
   );
 }
