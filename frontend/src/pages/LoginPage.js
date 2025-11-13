@@ -1,6 +1,6 @@
 // import React, { useState, useEffect } from 'react';
 // import { useNavigate, Link } from 'react-router-dom';
-// // import { signInWithRedirect } from 'aws-amplify/auth'; // DISABLED until Cognito is fully configured
+// import { signInWithRedirect } from 'aws-amplify/auth'; // DISABLED until Cognito is fully configured
 // import axios from 'axios';
 // import { setAuthData, useAuth } from '../utils/auth';
 // import { getApiUrl } from '../utils/apiUrl';
@@ -203,6 +203,10 @@
 
 // export default LoginPage;
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 71acc3524d00547d9cf1ef2f2e73e3fa3836cb5a
 import React, { useEffect } from "react";
 import { useAuth } from "react-oidc-context";
 import { useNavigate } from "react-router-dom";
@@ -245,4 +249,30 @@ function LoginPage() {
   );
 }
 
+<<<<<<< HEAD
 export default LoginPage;
+=======
+export default LoginPage;
+
+
+// import React from "react";
+// import { useAuth } from "react-oidc-context";
+
+// function LoginPage() {
+//   const auth = useAuth();
+
+//   if (auth.isLoading) return <p>Loading...</p>;
+//   if (auth.isAuthenticated)
+//     return <p>Signed in as {auth.user?.profile.email}</p>;
+
+//   return (
+//     <div className="login-page">
+//       <button onClick={() => auth.signinRedirect()} className="email-login-btn">
+//         Sign in with Cognito
+//       </button>
+//     </div>
+//   );
+// }
+
+// export default LoginPage;
+>>>>>>> 71acc3524d00547d9cf1ef2f2e73e3fa3836cb5a

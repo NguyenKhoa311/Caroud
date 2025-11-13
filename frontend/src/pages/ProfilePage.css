@@ -12,18 +12,20 @@
   display: flex;
   align-items: center;
   gap: 30px;
-  background: white;
+  background: var(--card-bg);
   padding: 40px;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow);
   margin-bottom: 30px;
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .profile-avatar {
   width: 120px;
   height: 120px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -37,13 +39,13 @@
 
 .profile-info h1 {
   font-size: 2.5rem;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 5px;
 }
 
 .profile-email {
   font-size: 1.1rem;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .stats-overview {
@@ -54,14 +56,15 @@
 }
 
 .stat-card {
-  background: white;
+  background: var(--card-bg);
   padding: 30px;
   border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow);
   display: flex;
   align-items: center;
   gap: 20px;
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid var(--border-color);
 }
 
 .stat-card:hover {
@@ -69,8 +72,9 @@
 }
 
 .stat-card.highlight {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+  color: var(--bg-primary);
+  border-color: transparent;
 }
 
 .stat-icon {
@@ -88,16 +92,18 @@
 }
 
 .detailed-stats {
-  background: white;
+  background: var(--card-bg);
   padding: 40px;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow);
   margin-bottom: 30px;
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .detailed-stats h2 {
   font-size: 1.8rem;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 25px;
 }
 
@@ -113,19 +119,21 @@
   justify-content: space-between;
   align-items: center;
   padding: 15px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 8px;
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease;
 }
 
 .stat-label {
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .stat-value {
   font-size: 1.3rem;
   font-weight: bold;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .stat-value.wins {
@@ -143,10 +151,11 @@
 .winrate-bar-large {
   width: 100%;
   height: 50px;
-  background: #f0f0f0;
+  background: var(--bg-tertiary);
   border-radius: 25px;
   overflow: hidden;
   position: relative;
+  border: 1px solid var(--border-color);
 }
 
 .winrate-fill-large {
@@ -163,18 +172,21 @@
   font-weight: bold;
   color: white;
   font-size: 1.2rem;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .match-history {
-  background: white;
+  background: var(--card-bg);
   padding: 40px;
   border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .match-history h2 {
   font-size: 1.8rem;
-  color: #333;
+  color: var(--text-primary);
   margin-bottom: 25px;
 }
 
@@ -189,28 +201,31 @@
   grid-template-columns: 120px 1fr 120px 80px;
   gap: 20px;
   padding: 20px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 12px;
   align-items: center;
-  border-left: 4px solid #ddd;
+  border-left: 4px solid var(--border-color);
   transition: all 0.3s ease;
+  border: 1px solid var(--border-color);
 }
 
 .history-item:hover {
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
 }
 
 .history-item.win {
   border-left-color: #10b981;
+  border-left-width: 4px;
 }
 
 .history-item.loss {
   border-left-color: #ef4444;
+  border-left-width: 4px;
 }
 
 .match-date {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.95rem;
 }
 
@@ -221,13 +236,13 @@
 }
 
 .vs-label {
-  color: #999;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
 .match-opponent strong {
   font-size: 1.1rem;
-  color: #333;
+  color: var(--text-primary);
 }
 
 .match-result {
@@ -306,27 +321,30 @@
 }
 
 .error-container p {
-  color: #e74c3c;
+  color: var(--error-color);
   font-size: 1.2rem;
 }
 
 /* No Matches State */
 .no-matches {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 3rem;
   text-align: center;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow);
   margin-top: 2rem;
+  border: 1px solid var(--border-color);
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .no-matches p {
-  color: #666;
+  color: var(--text-secondary);
   margin: 0.5rem 0;
   font-size: 1.1rem;
 }
 
 .no-matches-subtitle {
   font-size: 0.95rem;
-  color: #999;
+  color: var(--text-secondary);
+  opacity: 0.8;
 }
