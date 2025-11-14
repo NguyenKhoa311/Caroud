@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth as useOidcAuth } from 'react-oidc-context';
 import { useAuth, clearAuthData } from '../utils/auth';
 import { useNavigationGuard } from '../contexts/NavigationGuardContext';
@@ -12,9 +12,15 @@ function Navbar() {
   const { user, loading } = useAuth();
   const oidcAuth = useOidcAuth();
   const navigate = useNavigate();
+  const location = useLocation(); // Get current pathname
   const { requestNavigation } = useNavigationGuard();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Helper function to check if route is active
+  const isActiveRoute = (path) => {
+    return location.pathname === path;
+  };
 
   // Handle navigation with guard check
   const handleNavigation = (e, path) => {
@@ -83,10 +89,22 @@ function Navbar() {
         
         <ul className="navbar-menu">
           <li className="navbar-item">
-            <Link to="/" onClick={(e) => handleNavigation(e, '/')} className="navbar-link">Home</Link>
+            <Link 
+              to="/" 
+              onClick={(e) => handleNavigation(e, '/')} 
+              className={`navbar-link ${isActiveRoute('/') ? 'active' : ''}`}
+            >
+              Home
+            </Link>
           </li>
           <li className="navbar-item">
-            <Link to="/leaderboard" onClick={(e) => handleNavigation(e, '/leaderboard')} className="navbar-link">Leaderboard</Link>
+            <Link 
+              to="/leaderboard" 
+              onClick={(e) => handleNavigation(e, '/leaderboard')} 
+              className={`navbar-link ${isActiveRoute('/leaderboard') ? 'active' : ''}`}
+            >
+              Leaderboard
+            </Link>
           </li>
           
           {!loading && (
@@ -94,13 +112,31 @@ function Navbar() {
               {user ? (
                 <>
                   <li className="navbar-item">
-                    <Link to="/friends" onClick={(e) => handleNavigation(e, '/friends')} className="navbar-link">👥 Friends</Link>
+                    <Link 
+                      to="/friends" 
+                      onClick={(e) => handleNavigation(e, '/friends')} 
+                      className={`navbar-link ${isActiveRoute('/friends') ? 'active' : ''}`}
+                    >
+                      👥 Friends
+                    </Link>
                   </li>
                   <li className="navbar-item">
-                    <Link to="/rooms" onClick={(e) => handleNavigation(e, '/rooms')} className="navbar-link">🏠 Rooms</Link>
+                    <Link 
+                      to="/rooms" 
+                      onClick={(e) => handleNavigation(e, '/rooms')} 
+                      className={`navbar-link ${isActiveRoute('/rooms') ? 'active' : ''}`}
+                    >
+                      🏠 Rooms
+                    </Link>
                   </li>
                   <li className="navbar-item">
-                    <Link to="/profile" onClick={(e) => handleNavigation(e, '/profile')} className="navbar-link">Profile</Link>
+                    <Link 
+                      to="/profile" 
+                      onClick={(e) => handleNavigation(e, '/profile')} 
+                      className={`navbar-link ${isActiveRoute('/profile') ? 'active' : ''}`}
+                    >
+                      Profile
+                    </Link>
                   </li>
                   <li className="navbar-item navbar-user">
                     <span className="navbar-username">👤 {user.username}</span>

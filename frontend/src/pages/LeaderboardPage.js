@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { leaderboardService } from '../services/leaderboardService';
+import { calculateRanks, getRankColor, getRankIcon } from '../utils/leaderboardUtils';
 import './LeaderboardPage.css';
 
 function LeaderboardPage() {
@@ -11,31 +12,22 @@ function LeaderboardPage() {
     fetchLeaderboard();
   }, [filter]);
 
-const fetchLeaderboard = async () => {
-  try {
-    setLoading(true);
-    const data = await leaderboardService.getLeaderboard();
-    setPlayers(data);
-  } catch (error) {
-    console.error('Không thể tải bảng xếp hạng:', error.message);
-    setPlayers([]);
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const getRankColor = (rank) => {
-    if (rank === 1) return '#FFD700'; // Gold
-    if (rank === 2) return '#C0C0C0'; // Silver
-    if (rank === 3) return '#CD7F32'; // Bronze
-    return '#667eea';
-  };
-
-  const getRankIcon = (rank) => {
-    if (rank === 1) return '🥇';
-    if (rank === 2) return '🥈';
-    if (rank === 3) return '🥉';
-    return '🏅';
+  const fetchLeaderboard = async () => {
+    try {
+      setLoading(true);
+      const data = await leaderboardService.getLeaderboard(filter);
+      
+      // Calculate ranks with proper tie-breaking on frontend
+      // This ensures consistent ranking even if backend order changes
+      const rankedPlayers = calculateRanks(data);
+      
+      setPlayers(rankedPlayers);
+    } catch (error) {
+      console.error('Failed to fetch leaderboard:', error);
+      setPlayers([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -72,6 +64,10 @@ const fetchLeaderboard = async () => {
             <div className="spinner"></div>
             <p>Loading leaderboard...</p>
           </div>
+        ) : players.length === 0 ? (
+          <div className="empty-state">
+            <p>No players found. Be the first to play! 🎮</p>
+          </div>
         ) : (
           <div className="leaderboard-table">
             <div className="table-header">
@@ -84,8 +80,8 @@ const fetchLeaderboard = async () => {
 
             {players.map((player) => (
               <div 
-                key={player.rank} 
-                className={`table-row ${player.rank <= 3 ? 'top-player' : ''}`}
+                key={`${player.id}-${player.rank}`}
+                className={`table-row ${player.rank <= 3 ? 'top-player' : ''} ${!player.isRated ? 'unrated-player' : ''}`}
                 style={{ borderLeft: `4px solid ${getRankColor(player.rank)}` }}
               >
                 <div className="col-rank">
@@ -94,6 +90,7 @@ const fetchLeaderboard = async () => {
                 </div>
                 <div className="col-player">
                   <strong>{player.username}</strong>
+                  {!player.isRated && <span className="unrated-badge">Unrated</span>}
                 </div>
                 <div className="col-elo">
                   <span className="elo-badge">{player.elo_rating}</span>
