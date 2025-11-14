@@ -24,12 +24,44 @@ api.interceptors.request.use(
       console.log('🔗 API Request:', config.method?.toUpperCase(), config.baseURL + (config.url || ''));
     }
     
-    // Get token from sessionStorage (for email/password auth)
-    const token = sessionStorage.getItem('token');
+    // Priority 1: Get token from sessionStorage (for email/password auth)
+    const tokenAuth = sessionStorage.getItem('token');
     
-    if (token) {
+    if (tokenAuth) {
       // Django REST Framework expects "Token <token>"
-      config.headers.Authorization = `Token ${token}`;
+      config.headers.Authorization = `Token ${tokenAuth}`;
+      console.log('🔑 Using Token auth:', tokenAuth.substring(0, 20) + '...');
+      return config;
+    }
+    
+    // Priority 2: Get Cognito token from OIDC storage
+    const oidcStorageKey = `oidc.user:https://cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_MffQbWHoJ:7r5jtsi7pmgvpuu3hroso4qm7m`;
+    const oidcUserStr = sessionStorage.getItem(oidcStorageKey);
+    
+    console.log('🔍 Checking OIDC storage:', oidcStorageKey);
+    console.log('🔍 OIDC data exists:', !!oidcUserStr);
+    
+    if (oidcUserStr) {
+      try {
+        const oidcUser = JSON.parse(oidcUserStr);
+        // Use id_token instead of access_token for authentication
+        const cognitoToken = oidcUser.id_token;
+        
+        console.log('🔍 OIDC user parsed:', { 
+          hasIdToken: !!cognitoToken,
+          tokenPreview: cognitoToken ? cognitoToken.substring(0, 20) + '...' : 'none'
+        });
+        
+        if (cognitoToken) {
+          // Cognito uses Bearer token
+          config.headers.Authorization = `Bearer ${cognitoToken}`;
+          console.log('✅ Using Cognito Bearer token (id_token)');
+        }
+      } catch (error) {
+        console.error('❌ Failed to parse OIDC user data:', error);
+      }
+    } else {
+      console.log('⚠️ No auth token found in sessionStorage');
     }
     
     return config;

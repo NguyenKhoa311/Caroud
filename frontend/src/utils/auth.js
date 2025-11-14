@@ -333,13 +333,22 @@ export const clearAuthData = () => {
   sessionStorage.removeItem("token");
   sessionStorage.removeItem("user");
 
+  // Clear Cognito cache
+  sessionStorage.removeItem("cognito_user");
+
+  // Clear OIDC storage (react-oidc-context)
+  const oidcKey = "oidc.user:https://cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_MffQbWHoJ:7r5jtsi7pmgvpuu3hroso4qm7m";
+  sessionStorage.removeItem(oidcKey);
+
   // Clear localStorage (legacy)
   localStorage.removeItem("token");
   localStorage.removeItem("user");
 
-  // Optionally redirect to login page
+  // Trigger auth-change event to notify all components
   triggerAuthChange();
-  window.location.href = "/login";
+  
+  // Don't redirect here, let the logout flow handle it
+  // window.location.href = "/login";
 };
 
 /**
@@ -349,7 +358,7 @@ export const getAuthToken = () => {
   const tokenAuth = sessionStorage.getItem("token");
   if (tokenAuth) return tokenAuth;
 
-  // OIDC token
+  // OIDC token - use id_token for authentication
   const storedOidc = sessionStorage.getItem(
     "oidc.user:https://cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_MffQbWHoJ:7r5jtsi7pmgvpuu3hroso4qm7m"
   );
@@ -357,7 +366,7 @@ export const getAuthToken = () => {
 
   try {
     const parsed = JSON.parse(storedOidc);
-    return parsed.access_token || null;
+    return parsed.id_token || null;
   } catch {
     return null;
   }
@@ -395,6 +404,34 @@ export const getCurrentUserData = () => {
 export const isAuthenticated = () => !!getAuthToken();
 
 /**
+ * Helper function to fetch Cognito user profile in background
+ */
+const fetchCognitoProfile = async (id_token, setUser) => {
+  try {
+    const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/users/profile/`, {
+      headers: {
+        'Authorization': `Bearer ${id_token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (response.ok) {
+      const userData = await response.json();
+      setUser({
+        ...userData,
+        authType: "cognito",
+        token: id_token,
+      });
+      
+      // Update cache with fresh data
+      sessionStorage.setItem("cognito_user", JSON.stringify(userData));
+    }
+  } catch (error) {
+    console.error("Background profile fetch failed:", error);
+  }
+};
+
+/**
  * Reactive hook for authentication
  */
 export const useAuth = () => {
@@ -405,7 +442,7 @@ export const useAuth = () => {
   const checkAuth = async () => {
     setLoading(true);
 
-    // Priority 1: token-based auth
+    // Priority 1: token-based auth (email/password login)
     const token = sessionStorage.getItem("token");
     const userStr = sessionStorage.getItem("user");
     if (token && userStr) {
@@ -419,18 +456,75 @@ export const useAuth = () => {
       }
     }
 
-    // Priority 2: OIDC auth
-    if (oidcAuth.isAuthenticated) {
-      const profile = oidcAuth.user?.profile || {};
-      const access_token = oidcAuth.user?.access_token || null;
-      const oidcUser = {
-        username: profile.email?.split("@")[0] || "CognitoUser",
-        email: profile.email,
-        id: profile.sub,
-        authType: "cognito",
-        token: access_token,
-      };
-      setUser(oidcUser);
+    // Priority 2: OIDC auth (Cognito login)
+    if (oidcAuth.isAuthenticated && oidcAuth.user) {
+      const id_token = oidcAuth.user.id_token;
+      
+      // Check if we have cached user data in sessionStorage
+      const cachedUserStr = sessionStorage.getItem("cognito_user");
+      if (cachedUserStr) {
+        try {
+          const cachedUser = JSON.parse(cachedUserStr);
+          // Use cached data and set loading to false immediately
+          setUser({
+            ...cachedUser,
+            authType: "cognito",
+            token: id_token,
+          });
+          setLoading(false);
+          
+          // Fetch fresh data in background (don't block UI)
+          fetchCognitoProfile(id_token, setUser);
+          return;
+        } catch {
+          // ignore cache error, fetch fresh
+        }
+      }
+      
+      // No cache, fetch from backend
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/api/users/profile/`, {
+          headers: {
+            'Authorization': `Bearer ${id_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          const userWithAuth = {
+            ...userData,
+            authType: "cognito",
+            token: id_token,
+          };
+          setUser(userWithAuth);
+          
+          // Cache user data
+          sessionStorage.setItem("cognito_user", JSON.stringify(userData));
+        } else {
+          // If backend call fails, use basic OIDC profile
+          const profile = oidcAuth.user.profile || {};
+          setUser({
+            username: profile.email?.split("@")[0] || "CognitoUser",
+            email: profile.email,
+            id: profile.sub,
+            authType: "cognito",
+            token: id_token,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch user profile from backend:", error);
+        // Fallback to basic OIDC profile
+        const profile = oidcAuth.user?.profile || {};
+        setUser({
+          username: profile.email?.split("@")[0] || "CognitoUser",
+          email: profile.email,
+          id: profile.sub,
+          authType: "cognito",
+          token: id_token,
+        });
+      }
+      
       setLoading(false);
       return;
     }
@@ -460,6 +554,7 @@ export const useAuth = () => {
       window.removeEventListener("auth-change", handleAuthChange);
       window.removeEventListener("storage", handleStorageChange);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [oidcAuth.isAuthenticated, oidcAuth.user]);
 
   return {
@@ -468,6 +563,12 @@ export const useAuth = () => {
     isAuthenticated: !!user,
     login: () => oidcAuth.signinRedirect?.(),
     logout: () => oidcAuth.signoutRedirect?.(),
-    refreshAuth: () => checkAuth(),
+    refreshAuth: async () => {
+      // Clear cache to force fresh fetch
+      sessionStorage.removeItem("cognito_user");
+      await checkAuth();
+      // Trigger auth-change event to notify all components
+      triggerAuthChange();
+    },
   };
 };

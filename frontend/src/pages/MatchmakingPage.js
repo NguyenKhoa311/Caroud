@@ -17,6 +17,7 @@ function MatchmakingPage() {
   const [opponent, setOpponent] = useState(null);
   const pollingIntervalRef = useRef(null);
   const localTimerRef = useRef(null);
+  const isLeavingRef = useRef(false); // Track if we're already leaving queue
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -54,6 +55,9 @@ function MatchmakingPage() {
 
   // Cancel matchmaking
   const handleCancelMatchmaking = async () => {
+    if (isLeavingRef.current) return; // Already leaving
+    isLeavingRef.current = true;
+    
     try {
       await matchmakingService.leaveQueue();
       stopPolling();
@@ -63,6 +67,8 @@ function MatchmakingPage() {
       setQueueStats(null);
     } catch (error) {
       console.error('Error canceling matchmaking:', error);
+    } finally {
+      isLeavingRef.current = false;
     }
   };
 
@@ -135,7 +141,8 @@ function MatchmakingPage() {
       stopLocalTimer();
       
       // Leave queue if still searching
-      if (status === 'searching') {
+      if (status === 'searching' && !isLeavingRef.current) {
+        isLeavingRef.current = true;
         matchmakingService.leaveQueue().catch(console.error);
       }
     };
@@ -147,7 +154,13 @@ function MatchmakingPage() {
       // Enable blocking with cleanup callback and custom modal
       enableBlocking(
         (navigateTo) => {
+          if (isLeavingRef.current) {
+            navigate(navigateTo);
+            return;
+          }
+          
           console.log('🔴 User leaving matchmaking page - canceling queue and navigating to:', navigateTo);
+          isLeavingRef.current = true;
           // Cancel matchmaking first
           matchmakingService.leaveQueue()
             .then(() => {
@@ -159,6 +172,9 @@ function MatchmakingPage() {
               console.error('❌ Error leaving queue:', error);
               // Navigate anyway even if API fails
               navigate(navigateTo);
+            })
+            .finally(() => {
+              isLeavingRef.current = false;
             });
         },
         {
@@ -179,7 +195,8 @@ function MatchmakingPage() {
   useEffect(() => {
     // Handle page unload (close/refresh)
     const handleBeforeUnload = (e) => {
-      if (status === 'searching') {
+      if (status === 'searching' && !isLeavingRef.current) {
+        isLeavingRef.current = true;
         // Try to leave queue (may not complete due to browser restrictions)
         matchmakingService.leaveQueue().catch(console.error);
         

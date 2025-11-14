@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import TokenAuthentication
 from django.shortcuts import get_object_or_404
+from users.authentication import CognitoAuthentication
 from .models import Match
 from ai.engine import get_ai_move
 from .serializers import MatchSerializer, MakeMoveSerializer, GameResultSerializer
@@ -15,12 +16,19 @@ class GameViewSet(viewsets.ModelViewSet):
     """
     queryset = Match.objects.all()
     serializer_class = MatchSerializer
-    authentication_classes = [TokenAuthentication]  # Enable Token authentication
+    authentication_classes = [CognitoAuthentication, TokenAuthentication]  # Add Cognito auth!
     permission_classes = [AllowAny]  # Allow both authenticated and anonymous users
 
     def create(self, request):
         """Create a new game"""
         mode = request.data.get('mode', 'local')
+        
+        # Debug logging
+        print(f"\n🎮 Game Create Request:")
+        print(f"  - Mode: {mode}")
+        print(f"  - User authenticated: {request.user.is_authenticated}")
+        print(f"  - User: {request.user}")
+        print(f"  - Auth header: {request.META.get('HTTP_AUTHORIZATION', 'None')[:50]}...")
         
         # Determine black_player based on mode and authentication
         black_player = None
@@ -28,7 +36,9 @@ class GameViewSet(viewsets.ModelViewSet):
             # For online/ai modes, require authenticated user
             if request.user.is_authenticated:
                 black_player = request.user
+                print(f"✅ Using authenticated user: {black_player.username}")
             else:
+                print(f"❌ User not authenticated for {mode} mode")
                 return Response(
                     {'error': 'Authentication required for online/AI games'},
                     status=status.HTTP_401_UNAUTHORIZED

@@ -2,8 +2,10 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
 from django.db import models
 from django.utils import timezone
+from users.authentication import CognitoAuthentication
 from .models import MatchmakingQueue
 from .matchmaker import Matchmaker
 from game.serializers import MatchSerializer
@@ -16,8 +18,8 @@ class MatchmakingViewSet(viewsets.ViewSet):
     """
     ViewSet for matchmaking operations
     """
-    # Temporarily disable authentication for testing
-    authentication_classes = []
+    # Add authentication classes
+    authentication_classes = [CognitoAuthentication, TokenAuthentication]
     permission_classes = []
     
     @action(detail=False, methods=['post'])
@@ -25,25 +27,14 @@ class MatchmakingViewSet(viewsets.ViewSet):
         """
         Join matchmaking queue and try to find a match immediately
         """
-        # Get user from token if available, otherwise from request data
-        token = request.headers.get('Authorization', '').replace('Token ', '')
-        
-        if token:
-            from rest_framework.authtoken.models import Token as AuthToken
-            try:
-                auth_token = AuthToken.objects.get(key=token)
-                player = auth_token.user
-            except AuthToken.DoesNotExist:
-                return Response({
-                    'status': 'error',
-                    'message': 'Invalid token'
-                }, status=status.HTTP_401_UNAUTHORIZED)
-        else:
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
             return Response({
                 'status': 'error',
                 'message': 'Authentication required'
             }, status=status.HTTP_401_UNAUTHORIZED)
         
+        player = request.user
         logger.info(f"Player {player.username} attempting to join matchmaking")
         
         # Check if already in queue
@@ -91,25 +82,14 @@ class MatchmakingViewSet(viewsets.ViewSet):
         """
         Leave matchmaking queue
         """
-        # Get user from token
-        token = request.headers.get('Authorization', '').replace('Token ', '')
-        
-        if token:
-            from rest_framework.authtoken.models import Token as AuthToken
-            try:
-                auth_token = AuthToken.objects.get(key=token)
-                player = auth_token.user
-            except AuthToken.DoesNotExist:
-                return Response({
-                    'status': 'error',
-                    'message': 'Invalid token'
-                }, status=status.HTTP_401_UNAUTHORIZED)
-        else:
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
             return Response({
                 'status': 'error',
                 'message': 'Authentication required'
             }, status=status.HTTP_401_UNAUTHORIZED)
         
+        player = request.user
         deleted = Matchmaker.remove_from_queue(player)
         
         if deleted > 0:
@@ -118,10 +98,11 @@ class MatchmakingViewSet(viewsets.ViewSet):
                 'message': 'Left matchmaking queue'
             }, status=status.HTTP_200_OK)
         else:
+            # Return 200 even if not in queue - idempotent operation
             return Response({
                 'status': 'not_in_queue',
                 'message': 'You are not in matchmaking queue'
-            }, status=status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_200_OK)
     
     @action(detail=False, methods=['get'])
     def status(self, request):
@@ -129,24 +110,14 @@ class MatchmakingViewSet(viewsets.ViewSet):
         Check matchmaking status (for polling)
         Also cleans up stale entries (older than 5 minutes)
         """
-        # Get user from token
-        token = request.headers.get('Authorization', '').replace('Token ', '')
-        
-        if token:
-            from rest_framework.authtoken.models import Token as AuthToken
-            try:
-                auth_token = AuthToken.objects.get(key=token)
-                player = auth_token.user
-            except AuthToken.DoesNotExist:
-                return Response({
-                    'status': 'error',
-                    'message': 'Invalid token'
-                }, status=status.HTTP_401_UNAUTHORIZED)
-        else:
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
             return Response({
                 'status': 'error',
                 'message': 'Authentication required'
             }, status=status.HTTP_401_UNAUTHORIZED)
+        
+        player = request.user
         
         # Cleanup stale entries (older than 5 minutes with no activity)
         stale_time = timezone.now() - timezone.timedelta(minutes=5)

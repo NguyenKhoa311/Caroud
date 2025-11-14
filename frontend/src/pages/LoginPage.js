@@ -203,26 +203,43 @@
 
 // export default LoginPage;
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "react-oidc-context";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import LoadingOverlay from "../components/LoadingOverlay";
 import "./LoginPage.css";
 
 function LoginPage() {
   const auth = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Nếu đã đăng nhập, chuyển đến dashboard
+  // Clean up logout callback URL params
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    // If we have logout-related params, clean the URL
+    if (params.has('id_token_hint') || params.has('state') || params.has('logout')) {
+      // Remove query params by navigating to clean login URL
+      navigate('/login', { replace: true });
+    }
+  }, [location.search, navigate]);
+
+  // Nếi đã đăng nhập, chuyển đến dashboard
   useEffect(() => {
     if (auth.isAuthenticated) {
       navigate("/dashboard");
     }
   }, [auth.isAuthenticated, navigate]);
 
-  if (auth.isLoading) return <p>Loading...</p>;
+  if (auth.isLoading) return <LoadingOverlay message="Đang tải..." />;
   if (auth.error) return <p>Error: {auth.error.message}</p>;
 
-  const handleLogin = () => auth.signinRedirect();
+  const handleLogin = () => {
+    setIsLoggingIn(true);
+    auth.signinRedirect();
+  };
+
   const handleLogout = () => auth.signoutRedirect();
 
   return (
@@ -241,6 +258,9 @@ function LoginPage() {
           )}
         </div>
       </div>
+
+      {/* Loading Overlay during login */}
+      {isLoggingIn && <LoadingOverlay message="Đang chuyển đến trang đăng nhập..." />}
     </div>
   );
 }

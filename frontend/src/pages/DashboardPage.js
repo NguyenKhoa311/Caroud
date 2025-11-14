@@ -1,40 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import { getApiUrl } from '../utils/apiUrl';
+import api from '../services/api';
+import { useAuth } from '../utils/auth';
+import LoadingOverlay from '../components/LoadingOverlay';
 import './DashboardPage.css';
-
-const API_URL = getApiUrl();
 
 function DashboardPage() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user: authUser, loading: authLoading } = useAuth();
   const [stats, setStats] = useState(null);
   const [recentMatches, setRecentMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const loadUserData = async () => {
+    if (!authUser) {
+      navigate('/login');
+      return;
+    }
+
     try {
-      const token = sessionStorage.getItem('token');
-      const userStr = sessionStorage.getItem('user');
-
-      if (!token || !userStr) {
-        navigate('/login');
-        return;
-      }
-
-      const userData = JSON.parse(userStr);
-      setUser(userData);
-
       // Fetch user stats
       try {
-        const statsResponse = await axios.get(
-          `${API_URL}/api/users/${userData.id}/stats/`,
-          {
-            headers: { Authorization: `Token ${token}` }
-          }
-        );
+        const statsResponse = await api.get(`/api/users/${authUser.id}/stats/`);
         setStats(statsResponse.data);
       } catch (err) {
         console.error('Error fetching stats:', err);
@@ -42,12 +30,7 @@ function DashboardPage() {
 
       // Fetch recent matches
       try {
-        const matchesResponse = await axios.get(
-          `${API_URL}/api/users/${userData.id}/matches/?limit=5`,
-          {
-            headers: { Authorization: `Token ${token}` }
-          }
-        );
+        const matchesResponse = await api.get(`/api/users/${authUser.id}/matches/?limit=5`);
         setRecentMatches(matchesResponse.data);
       } catch (err) {
         console.error('Error fetching matches:', err);
@@ -62,17 +45,14 @@ function DashboardPage() {
   };
 
   useEffect(() => {
-    loadUserData();
+    if (!authLoading) {
+      loadUserData();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authUser, authLoading]);
 
-  if (loading) {
-    return (
-      <div className="dashboard-loading">
-        <div className="spinner"></div>
-        <p>Loading your dashboard...</p>
-      </div>
-    );
+  if (authLoading || loading) {
+    return <LoadingOverlay message="Đang tải dashboard..." />;
   }
 
   if (error) {
@@ -88,7 +68,7 @@ function DashboardPage() {
     <div className="dashboard-page">
       {/* Welcome Section */}
       <div className="dashboard-header">
-        <h1>Welcome back, {user?.username}! 👋</h1>
+        <h1>Welcome back, {authUser?.username || authUser?.email?.split('@')[0]}! 👋</h1>
         <p className="dashboard-subtitle">Ready to play some Caro?</p>
       </div>
 
@@ -140,25 +120,25 @@ function DashboardPage() {
         <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-icon">🏆</div>
-            <div className="stat-value">{stats?.elo_rating || user?.elo_rating || 1200}</div>
+            <div className="stat-value">{stats?.elo_rating || authUser?.elo_rating || 1200}</div>
             <div className="stat-label">ELO Rating</div>
           </div>
 
           <div className="stat-card">
             <div className="stat-icon">🎮</div>
-            <div className="stat-value">{stats?.total_games || user?.total_games || 0}</div>
+            <div className="stat-value">{stats?.total_games || authUser?.total_games || 0}</div>
             <div className="stat-label">Total Games</div>
           </div>
 
           <div className="stat-card">
             <div className="stat-icon">✅</div>
-            <div className="stat-value">{stats?.wins || user?.wins || 0}</div>
+            <div className="stat-value">{stats?.wins || authUser?.wins || 0}</div>
             <div className="stat-label">Wins</div>
           </div>
 
           <div className="stat-card">
             <div className="stat-icon">❌</div>
-            <div className="stat-value">{stats?.losses || user?.losses || 0}</div>
+            <div className="stat-value">{stats?.losses || authUser?.losses || 0}</div>
             <div className="stat-label">Losses</div>
           </div>
 
@@ -167,8 +147,8 @@ function DashboardPage() {
             <div className="stat-value">
               {stats?.win_rate !== undefined 
                 ? `${stats.win_rate.toFixed(1)}%` 
-                : user?.win_rate !== undefined
-                ? `${user.win_rate.toFixed(1)}%`
+                : authUser?.win_rate !== undefined
+                ? `${authUser.win_rate.toFixed(1)}%`
                 : '0%'}
             </div>
             <div className="stat-label">Win Rate</div>
@@ -176,7 +156,7 @@ function DashboardPage() {
 
           <div className="stat-card">
             <div className="stat-icon">🔥</div>
-            <div className="stat-value">{stats?.current_streak || user?.current_streak || 0}</div>
+            <div className="stat-value">{stats?.current_streak || authUser?.current_streak || 0}</div>
             <div className="stat-label">Current Streak</div>
           </div>
         </div>
@@ -194,7 +174,7 @@ function DashboardPage() {
             {recentMatches.map((match, index) => (
               <div key={index} className="match-item">
                 <div className="match-result">
-                  {match.winner === user?.id ? (
+                  {match.winner === authUser?.id ? (
                     <span className="result-win">WIN</span>
                   ) : match.winner === null ? (
                     <span className="result-draw">DRAW</span>

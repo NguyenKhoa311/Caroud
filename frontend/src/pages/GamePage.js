@@ -121,6 +121,7 @@ function GamePage() {
       console.log('🤖 Creating AI match...');
       const match = await gameService.createGame('ai');
       setCurrentMatchId(match.id);
+      setMyPlayer('X'); // In AI mode, player is always X (black)
       console.log('✅ AI match created:', match.id);
     } catch (err) {
       console.error('❌ Error creating AI match:', err);
@@ -194,20 +195,10 @@ function GamePage() {
 
   const loadMatchData = async () => {
     try {
-      const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+      console.log('✅ [GamePage.js] Loading match:', matchId);
       
-      // Use centralized config for API URL
-      console.log('✅ [GamePage.js] Loading match from:', config.apiUrl);
-      
-      const response = await fetch(`${config.apiUrl}/api/games/${matchId}/`, {
-        headers: {
-          'Authorization': `Token ${token}`
-        }
-      });
-      
-      if (!response.ok) throw new Error('Failed to load match');
-      
-      const data = await response.json();
+      // Use gameService which already has Cognito auth interceptor
+      const data = await gameService.getGame(matchId);
       setMatchData(data);
       
       // Determine which player I am using helper function
@@ -263,7 +254,24 @@ function GamePage() {
   };
 
   const setupWebSocket = () => {
-    const token = sessionStorage.getItem('token') || localStorage.getItem('token');
+    // Try to get token - prefer DRF token first, then Cognito
+    let token = sessionStorage.getItem('token') || localStorage.getItem('token');
+    
+    // If no DRF token, get Cognito id_token
+    if (!token) {
+      const oidcStorageKey = `oidc.user:https://cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_MffQbWHoJ:7r5jtsi7pmgvpuu3hroso4qm7m`;
+      const oidcUserStr = sessionStorage.getItem(oidcStorageKey);
+      
+      if (oidcUserStr) {
+        try {
+          const oidcUser = JSON.parse(oidcUserStr);
+          token = oidcUser.id_token;
+          console.log('✅ Using Cognito id_token for WebSocket');
+        } catch (error) {
+          console.error('❌ Failed to parse OIDC user data:', error);
+        }
+      }
+    }
     
     // Use centralized config for WebSocket URL
     const wsUrl = `${config.wsUrl}/game/${matchId}/?token=${token}`;
@@ -537,31 +545,37 @@ function GamePage() {
 
     // For AI mode, make move via API first
     if (mode === 'ai' && currentMatchId) {
-      console.log('🎯 Player making move via API:', { row, col, player: currentPlayer });
+      console.log('🎯 Player making move via API:', { row, col, player: 'X' });
+      
+      // Optimistically update UI immediately for better UX
+      // In AI mode, player is always X (black)
+      const newBoard = board.map(r => [...r]);
+      newBoard[row][col] = 'X';
+      setBoard(newBoard);
+      setIsAIThinking(true);
+      setGameStatus('AI is thinking... 🤖');
       
       try {
         // Send player move to backend
         const moveResponse = await gameService.makeMove(currentMatchId, row, col);
         console.log('✅ Player move response:', moveResponse);
         
-        // Update board from backend response
-        setBoard(moveResponse.match.board_state);
-        setCurrentPlayer(moveResponse.match.current_turn);
-        
         // Check if game over after player move
         if (moveResponse.status === 'game_over') {
+          setBoard(moveResponse.match.board_state);
           setGameOver(true);
           setWinningLine(moveResponse.winning_line);
+          setIsAIThinking(false);
           
           if (moveResponse.result === 'black_win') {
             setWinner('X');
             setGameStatus('You win! 🎉');
             setAIResult('win');
-            setTimeout(() => setShowAIResultModal(true), 1500);
+            setTimeout(() => setShowAIResultModal(true), 500);
           } else if (moveResponse.result === 'draw') {
             setGameStatus('Draw! 🤝');
             setAIResult('draw');
-            setTimeout(() => setShowAIResultModal(true), 1500);
+            setTimeout(() => setShowAIResultModal(true), 500);
           }
           return;
         }
@@ -573,7 +587,7 @@ function GamePage() {
         
         // Update board with AI move
         setBoard(aiResponse.match.board_state);
-        setCurrentPlayer(aiResponse.match.current_turn);
+        setIsAIThinking(false);
         
         // Check if AI won or draw
         if (aiResponse.status === 'game_over') {
@@ -584,19 +598,23 @@ function GamePage() {
             setWinningLine(aiResponse.winning_line);
             setGameStatus('AI wins! 🤖');
             setAIResult('loss');
-            setTimeout(() => setShowAIResultModal(true), 1500);
+            setTimeout(() => setShowAIResultModal(true), 500);
           } else if (aiResponse.result === 'draw') {
             setGameStatus('Draw! 🤝');
             setAIResult('draw');
-            setTimeout(() => setShowAIResultModal(true), 1500);
+            setTimeout(() => setShowAIResultModal(true), 500);
           }
         } else {
-          setGameStatus('Your turn!');
+          setGameStatus('Your turn! 🎯');
         }
         
       } catch (err) {
         console.error('❌ Error in AI game:', err);
         setGameStatus('Error occurred');
+        setIsAIThinking(false);
+        // Revert optimistic update on error
+        const revertBoard = board.map(r => [...r]);
+        setBoard(revertBoard);
       }
       
       return;
@@ -637,10 +655,11 @@ function GamePage() {
     setWinningLine(null);
     setShowAIResultModal(false);
     setAIResult(null);
+    setIsAIThinking(false);
     if (mode === 'local') {
       setGameStatus('Local multiplayer mode');
     } else if (mode === 'ai') {
-      setGameStatus('Playing against AI');
+      setGameStatus('Your turn! 🎯');
       // Create new AI match
       createAIMatch();
     }

@@ -61,42 +61,43 @@
 
 
 /**
- * PrivateRoute (Cognito version)
- *
- * Bảo vệ route bằng xác thực Cognito OIDC.
- * Dựa vào useAuth() của react-oidc-context.
+ * PrivateRoute Component
+ * 
+ * Route guard for protected pages that require authentication.
+ * Automatically redirects unauthenticated users to login page.
+ * 
+ * Features:
+ * - Checks authentication status using useAuth() hook
+ * - Shows loading state while checking authentication
+ * - Redirects to /login if user is not authenticated
+ * - Renders protected content if user is authenticated
+ * - Supports both Cognito and token-based auth
+ * 
+ * @component
+ * @param {Object} props - Component props
+ * @param {React.ReactNode} props.children - Protected page/component to render
  */
 
-import React from "react";
-import { Navigate } from "react-router-dom";
-import { useAuth } from "react-oidc-context";
+import React from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../utils/auth';
+import LoadingOverlay from './LoadingOverlay';
 
 function PrivateRoute({ children }) {
-  const auth = useAuth();
+  const { user, loading } = useAuth();
+  const location = useLocation();
 
-  if (auth.isLoading) {
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-          fontSize: "18px",
-          color: "#667eea",
-        }}
-      >
-        <div>Loading...</div>
-      </div>
-    );
+  // Show loading spinner while checking authentication status
+  if (loading) {
+    return <LoadingOverlay message="Đang xác thực..." />;
   }
 
-  // Nếu chưa đăng nhập → chuyển đến /login
-  if (!auth.isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  // If user is authenticated, render the protected content
+  // If not authenticated, redirect to login page with return path
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Nếu đã đăng nhập → render nội dung
   return children;
 }
 

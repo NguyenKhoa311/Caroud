@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { signOut } from 'aws-amplify/auth';
+import { useAuth as useOidcAuth } from 'react-oidc-context';
 import { useAuth, clearAuthData } from '../utils/auth';
 import { useNavigationGuard } from '../contexts/NavigationGuardContext';
 import ConfirmModal from './ConfirmModal';
 import ThemeToggle from './ThemeToggle';
+import LoadingOverlay from './LoadingOverlay';
 import './Navbar.css';
 
 function Navbar() {
   const { user, loading } = useAuth();
+  const oidcAuth = useOidcAuth();
   const navigate = useNavigate();
   const { requestNavigation } = useNavigationGuard();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Handle navigation with guard check
   const handleNavigation = (e, path) => {
@@ -33,21 +36,37 @@ function Navbar() {
   };
 
   const handleConfirmSignOut = async () => {
+    setShowLogoutModal(false);
+    setIsLoggingOut(true);
+    
     try {
       if (user?.authType === 'token') {
         // Token-based logout (email/password)
         clearAuthData();
         navigate('/');
-      } else {
-        // Cognito logout (social login)
-        await signOut();
+      } else if (user?.authType === 'cognito') {
+        // Cognito logout (OIDC)
+        
+        // Clear OIDC user from storage using removeUser()
+        await oidcAuth.removeUser();
+        
+        // Clear our custom auth data
         clearAuthData();
-        navigate('/');
+        
+        // Build Cognito logout URL manually
+        const logoutUrl = new URL('https://ap-southeast-1mffqbwhoj.auth.ap-southeast-1.amazoncognito.com/logout');
+        logoutUrl.searchParams.set('client_id', '7r5jtsi7pmgvpuu3hroso4qm7m');
+        logoutUrl.searchParams.set('logout_uri', window.location.origin);
+        
+        // Redirect to Cognito logout page
+        window.location.href = logoutUrl.toString();
       }
     } catch (error) {
       console.error('Error signing out:', error);
-    } finally {
-      setShowLogoutModal(false);
+      // Force logout even if OIDC signout fails
+      clearAuthData();
+      setIsLoggingOut(false);
+      navigate('/');
     }
   };
 
@@ -115,6 +134,9 @@ function Navbar() {
         onConfirm={handleConfirmSignOut}
         onCancel={handleCancelSignOut}
       />
+
+      {/* Loading Overlay during logout */}
+      {isLoggingOut && <LoadingOverlay message="Đang đăng xuất..." />}
     </nav>
   );
 }

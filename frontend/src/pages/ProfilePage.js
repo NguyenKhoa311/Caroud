@@ -1,67 +1,68 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useAuth, getAuthToken } from '../utils/auth';
-import { getApiUrl } from '../utils/apiUrl';
+import api from '../services/api';
+import { useAuth } from '../utils/auth';
+import LoadingOverlay from '../components/LoadingOverlay';
 import './ProfilePage.css';
 
-const API_URL = getApiUrl();
-
 function ProfilePage() {
-  const { user: authUser, loading: authLoading } = useAuth();
+  const { user: authUser, loading: authLoading, refreshAuth } = useAuth();
   const [stats, setStats] = useState(null);
   const [matchHistory, setMatchHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Edit mode states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    username: '',
+    email: ''
+  });
+  const [editError, setEditError] = useState(null);
+  const [editSuccess, setEditSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (authUser && !authLoading) {
       fetchUserData();
+      // Initialize edit form with current user data
+      setEditForm({
+        username: authUser.username || '',
+        email: authUser.email || ''
+      });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authUser, authLoading]);
 
   const fetchUserData = async () => {
     try {
-      const token = getAuthToken();
-      if (!token) {
+      if (!authUser) {
         setError('Not authenticated');
         setLoading(false);
         return;
       }
 
-      const userData = authUser;
-      
       // Fetch user stats from API
       try {
-        const statsResponse = await axios.get(
-          `${API_URL}/api/users/${userData.id}/stats/`,
-          {
-            headers: { Authorization: `Token ${token}` }
-          }
-        );
+        const statsResponse = await api.get(`/api/users/${authUser.id}/stats/`);
         setStats(statsResponse.data);
       } catch (err) {
         console.error('Error fetching stats:', err);
         // Use default stats if API fails
         setStats({
-          elo_rating: userData.elo_rating || 1200,
+          elo_rating: authUser.elo_rating || 1200,
           rank: '---',
-          total_games: userData.total_games || 0,
-          wins: userData.wins || 0,
-          losses: userData.losses || 0,
-          win_rate: userData.win_rate || 0,
-          current_streak: userData.current_streak || 0,
-          best_streak: userData.best_streak || 0,
+          total_games: authUser.total_games || 0,
+          wins: authUser.wins || 0,
+          losses: authUser.losses || 0,
+          win_rate: authUser.win_rate || 0,
+          current_streak: authUser.current_streak || 0,
+          best_streak: authUser.best_streak || 0,
         });
       }
 
       // Fetch match history
       try {
-        const historyResponse = await axios.get(
-          `${API_URL}/api/users/${userData.id}/matches/?limit=10`,
-          {
-            headers: { Authorization: `Token ${token}` }
-          }
-        );
+        const historyResponse = await api.get(`/api/users/${authUser.id}/matches/?limit=10`);
         setMatchHistory(historyResponse.data || []);
       } catch (err) {
         console.error('Error fetching match history:', err);
@@ -76,15 +77,94 @@ function ProfilePage() {
     }
   };
 
+  const handleEditClick = () => {
+    setIsEditing(true);
+    setEditError(null);
+    setEditSuccess(false);
+    // Reset form to current values
+    setEditForm({
+      username: authUser.username || '',
+      email: authUser.email || ''
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditError(null);
+    setEditSuccess(false);
+  };
+
+  const handleEditChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Clear errors when user types
+    setEditError(null);
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setEditError(null);
+    setEditSuccess(false);
+
+    try {
+      // Validate username
+      if (editForm.username.trim().length < 3) {
+        setEditError('Username must be at least 3 characters long');
+        setSaving(false);
+        return;
+      }
+
+      if (editForm.username.trim().length > 30) {
+        setEditError('Username must be at most 30 characters long');
+        setSaving(false);
+        return;
+      }
+
+      // Call API to update profile
+      const response = await api.put('/api/users/update_profile/', {
+        username: editForm.username.trim(),
+        email: editForm.email.trim()
+      });
+
+      if (response.data) {
+        setEditSuccess(true);
+        setIsEditing(false);
+        
+        // Refresh auth to get updated user data
+        await refreshAuth();
+        
+        // Show success message
+        setTimeout(() => {
+          setEditSuccess(false);
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      
+      if (error.response?.data) {
+        // Handle validation errors from backend
+        const errors = error.response.data;
+        if (errors.username) {
+          setEditError(errors.username[0]);
+        } else if (errors.email) {
+          setEditError(errors.email[0]);
+        } else {
+          setEditError('Failed to update profile. Please try again.');
+        }
+      } else {
+        setEditError('Failed to update profile. Please try again.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (authLoading || loading) {
-    return (
-      <div className="profile-page">
-        <div className="loading-container">
-          <div className="spinner"></div>
-          <p>Loading profile...</p>
-        </div>
-      </div>
-    );
+    return <LoadingOverlay message="Đang tải profile..." />;
   }
 
   if (error) {
@@ -100,14 +180,84 @@ function ProfilePage() {
   return (
     <div className="profile-page">
       <div className="profile-container">
+        {/* Success Message */}
+        {editSuccess && (
+          <div className="alert alert-success">
+            ✅ Profile updated successfully!
+          </div>
+        )}
+
         {/* Profile Header */}
         <div className="profile-header">
           <div className="profile-avatar">
             <span className="avatar-icon">👤</span>
           </div>
           <div className="profile-info">
-            <h1>{authUser?.username || 'Player'}</h1>
-            <p className="profile-email">{authUser?.email || 'user@example.com'}</p>
+            {!isEditing ? (
+              <>
+                <h1>{authUser?.username || 'Player'}</h1>
+                <p className="profile-email">{authUser?.email || 'user@example.com'}</p>
+                <button className="btn btn-edit" onClick={handleEditClick}>
+                  ✏️ Edit Profile
+                </button>
+              </>
+            ) : (
+              <div className="profile-edit-form">
+                <h2>Edit Profile</h2>
+                {editError && (
+                  <div className="alert alert-error">
+                    {editError}
+                  </div>
+                )}
+                <form onSubmit={handleSaveProfile}>
+                  <div className="form-group">
+                    <label htmlFor="username">Username</label>
+                    <input
+                      type="text"
+                      id="username"
+                      name="username"
+                      value={editForm.username}
+                      onChange={handleEditChange}
+                      placeholder="Enter username (3-30 characters)"
+                      minLength="3"
+                      maxLength="30"
+                      required
+                      disabled={saving}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="email">Email</label>
+                    <input
+                      type="email"
+                      id="email"
+                      name="email"
+                      value={editForm.email}
+                      onChange={handleEditChange}
+                      placeholder="Enter email"
+                      required
+                      disabled={saving}
+                    />
+                  </div>
+                  <div className="form-actions">
+                    <button 
+                      type="submit" 
+                      className="btn btn-primary"
+                      disabled={saving}
+                    >
+                      {saving ? 'Saving...' : '💾 Save Changes'}
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary"
+                      onClick={handleCancelEdit}
+                      disabled={saving}
+                    >
+                      ❌ Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
         </div>
 
@@ -223,6 +373,9 @@ function ProfilePage() {
           )}
         </div>
       </div>
+
+      {/* Loading Overlay during save */}
+      {saving && <LoadingOverlay message="Đang lưu thay đổi..." />}
     </div>
   );
 }

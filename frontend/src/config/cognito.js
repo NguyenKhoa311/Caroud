@@ -11,7 +11,7 @@ const cognitoConfig = {
   authority: 'https://cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_MffQbWHoJ',
   client_id: '7r5jtsi7pmgvpuu3hroso4qm7m',
   redirect_uri: redirectUrl,
-  post_logout_redirect_uri: redirectUrl,
+  post_logout_redirect_uri: redirectUrl, // Changed from /login to root URL
   response_type: 'code',
   scope: 'email openid profile',
   
@@ -20,7 +20,7 @@ const cognitoConfig = {
     domain: 'ap-southeast-1mffqbwhoj.auth.ap-southeast-1.amazoncognito.com',
     scope: ['email', 'openid', 'profile'],
     redirectSignIn: redirectUrl,
-    redirectSignOut: redirectUrl,
+    redirectSignOut: redirectUrl, // Changed from /login to root URL
     responseType: 'code'
   }
 };

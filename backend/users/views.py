@@ -103,6 +103,82 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
+    @action(detail=False, methods=['put', 'patch'])
+    def update_profile(self, request):
+        """
+        Update current authenticated user's profile.
+        
+        Endpoint: PUT/PATCH /api/users/update_profile/
+        Authentication: Required
+        
+        Allowed fields to update:
+            - username (must be unique, 3-30 characters)
+            - email (must be unique, valid email format)
+            
+        Returns:
+            Response: Updated user profile
+            
+        Example:
+            PUT /api/users/update_profile/
+            Headers: Authorization: Bearer <token>
+            Body: {
+                "username": "new_username",
+                "email": "newemail@example.com"
+            }
+            
+            Response 200:
+            {
+                "id": 1,
+                "username": "new_username",
+                "email": "newemail@example.com",
+                ...
+            }
+            
+            Response 400:
+            {
+                "username": ["Username already exists"]
+            }
+        """
+        user = request.user
+        data = request.data
+        
+        # Validate username
+        new_username = data.get('username', '').strip()
+        if new_username:
+            if len(new_username) < 3 or len(new_username) > 30:
+                return Response(
+                    {'username': ['Username must be between 3 and 30 characters']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check if username already exists (excluding current user)
+            if User.objects.filter(username=new_username).exclude(id=user.id).exists():
+                return Response(
+                    {'username': ['Username already exists']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            user.username = new_username
+        
+        # Validate email
+        new_email = data.get('email', '').strip()
+        if new_email:
+            # Check if email already exists (excluding current user)
+            if User.objects.filter(email=new_email).exclude(id=user.id).exists():
+                return Response(
+                    {'email': ['Email already exists']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            user.email = new_email
+        
+        # Save user
+        user.save()
+        
+        # Return updated profile
+        serializer = self.get_serializer(user)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['get'])
     def stats(self, request, pk=None):
         """
