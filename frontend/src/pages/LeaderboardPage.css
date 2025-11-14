@@ -54,27 +54,40 @@
 }
 
 [data-theme='dark'] .leaderboard-header h1 {
+  color: transparent;
   background: linear-gradient(135deg, var(--gradient-gold-start) 0%, var(--gradient-gold-end) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.3));
-  animation: glow-pulse 3s ease-in-out infinite;
 }
 
-@keyframes glow-pulse {
-  0%, 100% {
-    filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.3));
-  }
-  50% {
-    filter: drop-shadow(0 0 30px rgba(255, 165, 0, 0.5));
-  }
-}
-
+/* Trophy animation - separate from text gradient */
 .leaderboard-header h1::before {
   content: '🏆';
   font-size: 2.5rem;
   animation: trophy-float 2s ease-in-out infinite;
+  /* Reset text fill for emoji to show properly */
+  -webkit-text-fill-color: initial;
+  background: none;
+  color: initial;
+}
+
+[data-theme='dark'] .leaderboard-header h1::before {
+  content: '🏆';
+  font-size: 2.5rem;
+  animation: trophy-float 2s ease-in-out infinite;
+  /* Force emoji to display with glow effect */
+  -webkit-text-fill-color: initial !important;
+  background: none !important;
+  color: initial !important;
+  filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8))
+          drop-shadow(0 0 30px rgba(255, 165, 0, 0.6))
+          drop-shadow(0 0 45px rgba(255, 140, 0, 0.4));
+}
+
+/* Remove glow-pulse animation that conflicts with emoji */
+[data-theme='dark'] .leaderboard-header h1 {
+  animation: none;
 }
 
 @keyframes trophy-float {
@@ -315,11 +328,52 @@
   color: var(--text-primary);
   font-weight: 600;
   letter-spacing: 0.3px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 [data-theme='dark'] .col-player strong {
   color: var(--text-primary);
   text-shadow: 0 0 10px rgba(139, 158, 255, 0.2);
+}
+
+/* Unrated player badge */
+.unrated-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(128, 128, 128, 0.15);
+  color: #888;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+[data-theme='dark'] .unrated-badge {
+  background: rgba(128, 128, 128, 0.2);
+  color: #999;
+  border: 1px solid rgba(128, 128, 128, 0.4);
+}
+
+/* Unrated player row styling */
+.table-row.unrated-player {
+  opacity: 0.7;
+}
+
+[data-theme='dark'] .table-row.unrated-player {
+  opacity: 0.6;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.table-row.unrated-player:hover {
+  opacity: 0.85;
+}
+
+[data-theme='dark'] .table-row.unrated-player:hover {
+  opacity: 0.8;
 }
 
 .elo-badge {
