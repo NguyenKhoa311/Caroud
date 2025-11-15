@@ -117,7 +117,7 @@ function Navbar() {
                       onClick={(e) => handleNavigation(e, '/friends')} 
                       className={`navbar-link ${isActiveRoute('/friends') ? 'active' : ''}`}
                     >
-                      👥 Friends
+                      Friends
                     </Link>
                   </li>
                   <li className="navbar-item">
@@ -126,7 +126,7 @@ function Navbar() {
                       onClick={(e) => handleNavigation(e, '/rooms')} 
                       className={`navbar-link ${isActiveRoute('/rooms') ? 'active' : ''}`}
                     >
-                      🏠 Rooms
+                      Rooms
                     </Link>
                   </li>
                   <li className="navbar-item">
