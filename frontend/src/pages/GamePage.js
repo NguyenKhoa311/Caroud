@@ -68,6 +68,12 @@ function GamePage() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [currentMatchId, setCurrentMatchId] = useState(null); // For AI mode
   
+  // Timer state (30 seconds per turn)
+  const [timeLeft, setTimeLeft] = useState(30);
+  const [isMyTurn, setIsMyTurn] = useState(false);
+  const timerRef = useRef(null);
+  const turnStartTimeRef = useRef(null);
+  
   // ELO Modal state
   const [showELOModal, setShowELOModal] = useState(false);
   const [eloData, setEloData] = useState(null);
@@ -192,6 +198,90 @@ function GamePage() {
       disableBlocking();
     };
   }, [mode, gameOver, matchId, enableBlocking, disableBlocking, navigate]);
+
+  // Timer effect - 30 seconds per turn
+  useEffect(() => {
+    // Only run timer for online and AI modes when game is active
+    // For online mode: need matchId, for AI mode: need currentMatchId
+    const hasActiveMatch = (mode === 'online' && matchId) || (mode === 'ai' && currentMatchId);
+    
+    if ((mode === 'online' || mode === 'ai') && !gameOver && hasActiveMatch) {
+      // Determine if it's my turn
+      const myTurnNow = (mode === 'online' && myPlayer === currentPlayer) || 
+                        (mode === 'ai' && currentPlayer === 'X' && !isAIThinking);
+      
+      setIsMyTurn(myTurnNow);
+      
+      if (myTurnNow) {
+        // Reset timer when it becomes my turn
+        setTimeLeft(30);
+        turnStartTimeRef.current = Date.now();
+        
+        // Clear any existing timer
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+        
+        // Start countdown
+        timerRef.current = setInterval(() => {
+          setTimeLeft(prev => {
+            if (prev <= 1) {
+              // Time's up! - Auto lose
+              clearInterval(timerRef.current);
+              handleTimeOut();
+              return 0;
+            }
+            return prev - 1;
+          });
+        }, 1000);
+      } else {
+        // Not my turn - clear timer
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+        setTimeLeft(30);
+      }
+    } else {
+      // Game over or not online/ai mode - clear timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      setTimeLeft(30);
+      setIsMyTurn(false);
+    }
+    
+    // Cleanup timer on unmount or when dependencies change
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [mode, gameOver, matchId, currentMatchId, myPlayer, currentPlayer, isAIThinking]);
+
+  // Handle timeout - player loses if time runs out
+  const handleTimeOut = async () => {
+    console.log('⏰ Time out! Player loses.');
+    
+    if (mode === 'online' && wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      // Send timeout message to backend
+      wsRef.current.send(JSON.stringify({
+        type: 'timeout',
+        player: myPlayer
+      }));
+    } else if (mode === 'ai' && currentMatchId) {
+      // For AI mode, forfeit the game
+      try {
+        await gameService.forfeitGame(currentMatchId);
+        setGameOver(true);
+        setWinner('O');
+        setGameStatus('Time out! You lose! ⏰');
+        setAIResult('loss');
+        setTimeout(() => setShowAIResultModal(true), 1000);
+      } catch (err) {
+        console.error('Error forfeiting game:', err);
+      }
+    }
+  };
 
   const loadMatchData = async () => {
     try {
@@ -451,6 +541,49 @@ function GamePage() {
           // Game continues - update status using helper function
           const status = getGameStatus(myPlayer, nextPlayer, false, null);
           setGameStatus(status);
+        }
+      } else if (data.type === 'timeout') {
+        // Player timed out - handle game over
+        console.log('⏰ Timeout event received:', data);
+        setGameOver(true);
+        
+        // Determine winner (opposite of timed-out player)
+        const timedOutPlayer = data.player;
+        const winnerPlayer = timedOutPlayer === 'X' ? 'O' : 'X';
+        setWinner(winnerPlayer);
+        
+        if (data.player === myPlayer) {
+          setGameStatus('Time out! You lose! ⏰');
+        } else {
+          setGameStatus('Opponent timed out! You win! 🎉');
+        }
+        
+        // Show ELO modal if available
+        if (data.elo_changes && user) {
+          const amIBlackPlayer = data.elo_changes.black_player.user_id === user.id;
+          const myPlayerData = amIBlackPlayer
+            ? data.elo_changes.black_player 
+            : data.elo_changes.white_player;
+          
+          let myResult = 'draw';
+          if (timedOutPlayer === 'X') {
+            myResult = amIBlackPlayer ? 'loss' : 'win';
+          } else {
+            myResult = amIBlackPlayer ? 'win' : 'loss';
+          }
+          
+          setMatchResult(myResult);
+          setEloData({
+            oldElo: myPlayerData.old_elo,
+            newElo: myPlayerData.new_elo,
+            change: myPlayerData.change,
+            oldRank: myPlayerData.old_rank,
+            newRank: myPlayerData.new_rank
+          });
+          
+          setTimeout(() => {
+            setShowELOModal(true);
+          }, 1500);
         }
       }
     };
@@ -727,13 +860,142 @@ function GamePage() {
             <p>Waiting for opponent...</p>
           </div>
         ) : (
-          <Board 
-            board={board}
-            onCellClick={handleCellClick}
-            currentPlayer={currentPlayer}
-            gameOver={gameOver}
-            winningLine={winningLine}
-          />
+          <div className="game-layout">
+            {/* Left Side - Opponent Info */}
+            <div className="opponent-info-panel">
+              <h3>Opponent</h3>
+              {mode === 'ai' ? (
+                <div className="player-card ai-player">
+                  <div className="player-avatar">🤖</div>
+                  <div className="player-details">
+                    <div className="player-name">AI Bot</div>
+                    <div className="player-elo">
+                      <span className="elo-label">ELO:</span>
+                      <span className="elo-value">1500</span>
+                    </div>
+                    <div className="player-level">Beep boop... I never lose! 😎</div>
+                  </div>
+                  <div className={`player-turn-indicator ${currentPlayer === 'O' && !gameOver ? 'active' : ''}`}>
+                    {currentPlayer === 'O' && !gameOver && '🤖 Thinking...'}
+                  </div>
+                </div>
+              ) : mode === 'online' && matchData ? (
+                <div className="player-card">
+                  <div className="player-avatar">
+                    {myPlayer === 'X' ? '⚪' : '⚫'}
+                  </div>
+                  <div className="player-details">
+                    <div className="player-name">
+                      {myPlayer === 'X' ? whitePlayer?.username : blackPlayer?.username}
+                    </div>
+                    <div className="player-elo">
+                      <span className="elo-label">ELO:</span>
+                      <span className="elo-value">
+                        {myPlayer === 'X' ? whitePlayer?.elo_rating : blackPlayer?.elo_rating}
+                      </span>
+                    </div>
+                    <div className="player-stats">
+                      Wins: {myPlayer === 'X' ? whitePlayer?.wins : blackPlayer?.wins} | 
+                      Games: {myPlayer === 'X' ? whitePlayer?.total_games : blackPlayer?.total_games}
+                    </div>
+                  </div>
+                  <div className={`player-turn-indicator ${
+                    (myPlayer === 'X' && currentPlayer === 'O' && !gameOver) ||
+                    (myPlayer === 'O' && currentPlayer === 'X' && !gameOver) ? 'active' : ''
+                  }`}>
+                    {((myPlayer === 'X' && currentPlayer === 'O') || 
+                      (myPlayer === 'O' && currentPlayer === 'X')) && 
+                      !gameOver && '⏳ Opponent\'s Turn'}
+                  </div>
+                </div>
+              ) : (
+                <div className="player-card">
+                  <div className="player-avatar">👤</div>
+                  <div className="player-details">
+                    <div className="player-name">Local Player</div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Your Info */}
+              <h3 style={{marginTop: '30px'}}>You</h3>
+              {mode === 'online' && matchData ? (
+                <div className="player-card you-card">
+                  <div className="player-avatar">
+                    {myPlayer === 'X' ? '⚫' : '⚪'}
+                  </div>
+                  <div className="player-details">
+                    <div className="player-name">
+                      {myPlayer === 'X' ? blackPlayer?.username : whitePlayer?.username}
+                    </div>
+                    <div className="player-elo">
+                      <span className="elo-label">ELO:</span>
+                      <span className="elo-value">
+                        {myPlayer === 'X' ? blackPlayer?.elo_rating : whitePlayer?.elo_rating}
+                      </span>
+                    </div>
+                    <div className="player-stats">
+                      Wins: {myPlayer === 'X' ? blackPlayer?.wins : whitePlayer?.wins} | 
+                      Games: {myPlayer === 'X' ? blackPlayer?.total_games : whitePlayer?.total_games}
+                    </div>
+                  </div>
+                  <div className={`player-turn-indicator ${
+                    (myPlayer === 'X' && currentPlayer === 'X' && !gameOver) ||
+                    (myPlayer === 'O' && currentPlayer === 'O' && !gameOver) ? 'active' : ''
+                  }`}>
+                    {((myPlayer === 'X' && currentPlayer === 'X') || 
+                      (myPlayer === 'O' && currentPlayer === 'O')) && 
+                      !gameOver && '🎯 Your Turn'}
+                  </div>
+                </div>
+              ) : mode === 'ai' ? (
+                <div className="player-card you-card">
+                  <div className="player-avatar">⚫</div>
+                  <div className="player-details">
+                    <div className="player-name">{user?.username || 'Player'}</div>
+                    <div className="player-elo">
+                      <span className="elo-label">ELO:</span>
+                      <span className="elo-value">{user?.elo_rating || 1200}</span>
+                    </div>
+                  </div>
+                  <div className={`player-turn-indicator ${currentPlayer === 'X' && !gameOver ? 'active' : ''}`}>
+                    {currentPlayer === 'X' && !gameOver && '🎯 Your Turn'}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+            
+            {/* Center - Board */}
+            <Board 
+              board={board}
+              onCellClick={handleCellClick}
+              currentPlayer={currentPlayer}
+              gameOver={gameOver}
+              winningLine={winningLine}
+            />
+            
+            {/* Right Side - Timer */}
+            {(mode === 'online' || mode === 'ai') && !gameOver && (matchId || currentMatchId) && (
+              <div className="timer-side-panel">
+                <h3>Time</h3>
+                <div className={`timer-display-side ${isMyTurn ? 'my-turn' : 'opponent-turn'} ${timeLeft <= 10 ? 'warning' : ''} ${timeLeft <= 5 ? 'critical' : ''}`}>
+                  <div className="timer-circle">
+                    <div className="timer-value-large">{timeLeft}</div>
+                    <div className="timer-seconds">seconds</div>
+                  </div>
+                  <div className="timer-icon-large">⏱️</div>
+                  <div className="timer-status">
+                    {isMyTurn ? '🎯 Your Turn' : (mode === 'ai' ? '🤖 AI\'s Turn' : '⏳ Opponent\'s Turn')}
+                  </div>
+                  {timeLeft <= 10 && (
+                    <div className="timer-warning-text">
+                      {timeLeft <= 5 ? '⚠️ HURRY UP!' : '⏰ Running out!'}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {gameOver && mode !== 'online' && (

@@ -237,7 +237,7 @@ function RoomLobby() {
               >
                 <div className="player-info">
                   <span className="player-name">
-                    {participant.user.username}
+                    <span>{participant.user.username}</span>
                     {participant.user.id === room.host.id && <span className="host-badge">👑 Host</span>}
                   </span>
                   <span className="player-elo">ELO: {participant.user.elo_rating}</span>

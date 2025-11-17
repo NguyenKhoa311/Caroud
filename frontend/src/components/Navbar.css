@@ -196,6 +196,16 @@
 .navbar-user {
   display: flex;
   align-items: center;
+  max-width: 200px;
+}
+
+.navbar-username {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .navbar-username {
