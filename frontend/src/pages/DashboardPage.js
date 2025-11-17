@@ -68,7 +68,9 @@ function DashboardPage() {
     <div className="dashboard-page">
       {/* Welcome Section */}
       <div className="dashboard-header">
-        <h1>Welcome back, {authUser?.username || authUser?.email?.split('@')[0]}! 👋</h1>
+        <h1>
+          Welcome back, <span className="welcome-username">{authUser?.username || authUser?.email?.split('@')[0]}</span>! 👋
+        </h1>
         <p className="dashboard-subtitle">Ready to play some Caro?</p>
       </div>
 

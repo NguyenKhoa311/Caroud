@@ -31,6 +31,12 @@ export const gameService = {
     return response.data;
   },
 
+  // Forfeit game (timeout or surrender)
+  forfeitGame: async (gameId) => {
+    const response = await api.post(`/api/games/${gameId}/forfeit/`);
+    return response.data;
+  },
+
   // Join matchmaking queue
   joinMatchmaking: async () => {
     const response = await api.post('/api/matchmaking/join/');

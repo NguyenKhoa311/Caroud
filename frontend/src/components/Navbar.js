@@ -83,16 +83,16 @@ function Navbar() {
   return (
     <nav className="navbar">
       <div className="navbar-container">
-        <Link to="/" onClick={(e) => handleNavigation(e, '/')} className="navbar-logo">
+        <Link to={user ? "/dashboard" : "/"} onClick={(e) => handleNavigation(e, user ? "/dashboard" : "/")} className="navbar-logo">
           🎮 Caro Game
         </Link>
         
         <ul className="navbar-menu">
           <li className="navbar-item">
             <Link 
-              to="/" 
-              onClick={(e) => handleNavigation(e, '/')} 
-              className={`navbar-link ${isActiveRoute('/') ? 'active' : ''}`}
+              to={user ? "/dashboard" : "/"} 
+              onClick={(e) => handleNavigation(e, user ? "/dashboard" : "/")} 
+              className={`navbar-link ${isActiveRoute(user ? '/dashboard' : '/') ? 'active' : ''}`}
             >
               Home
             </Link>
