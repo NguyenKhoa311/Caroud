@@ -49,7 +49,8 @@ function ProfilePage() {
         const statsPayload = {
           action: 'getUserStats',
           payload: {
-            userId: authUser.id 
+            // Use cognito_id if available (for Cognito users), otherwise use id
+            userId: authUser.cognito_id || authUser.id 
           }
         };
         // Sử dụng POST (hoặc GET nếu bạn cấu hình API Gateway cho phép)
@@ -64,7 +65,8 @@ function ProfilePage() {
         const historyPayload = {
           action: 'getMatchHistory',
           payload: {
-            userId: authUser.id,
+            // Use cognito_id if available (for Cognito users), otherwise use id
+            userId: authUser.cognito_id || authUser.id,
             limit: 10
           }
         };
@@ -382,11 +384,8 @@ const response = await api.post(
           {matchHistory.length > 0 ? (
             <div className="history-list">
               {matchHistory.map((match, index) => {
-                // Handle AI matches: winner can be 'AI' string
-                const isWinner = match.winner === authUser?.id;
-                const isAIWinner = match.winner === 'AI';
-                const isDraw = match.result === 'draw' || (!match.winner && !isAIWinner);
-                const result = isDraw ? 'draw' : (isWinner ? 'win' : 'loss');
+                // Backend đã tính user_result sẵn ('win', 'loss', 'draw')
+                const result = match.user_result || 'draw';
                 
                 return (
                   <div key={match.id || index} className={`history-item ${result}`}>
@@ -398,7 +397,7 @@ const response = await api.post(
                       <strong>{match.opponent_username || 'Unknown'}</strong>
                     </div>
                     <div className={`match-result ${result}`}>
-                      {isDraw ? '⚖️ Draw' : isWinner ? '✅ Won' : '❌ Lost'}
+                      {result === 'draw' ? '⚖️ Draw' : result === 'win' ? '✅ Won' : '❌ Lost'}
                     </div>
                     <div className={`elo-change ${match.elo_change > 0 ? 'positive' : 'negative'}`}>
                       {match.elo_change > 0 ? '+' : ''}{match.elo_change || 0}

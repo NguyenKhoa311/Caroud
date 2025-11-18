@@ -231,12 +231,12 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'email', 'elo_rating',
+            'id', 'cognito_id', 'username', 'email', 'elo_rating',
             'wins', 'losses', 'draws', 'total_games',
             'win_rate', 'current_streak', 'best_streak',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'cognito_id', 'created_at', 'updated_at']
 
 
 class UserStatsSerializer(serializers.ModelSerializer):
