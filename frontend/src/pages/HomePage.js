@@ -1,11 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../utils/auth';
+import DashboardPage from './DashboardPage';
 import './HomePage.css';
 
 function HomePage() {
   const { user } = useAuth();
 
+  // If user is logged in, show Dashboard instead
+  if (user) {
+    return <DashboardPage />;
+  }
+
+  // If not logged in, show welcome page
   return (
     <div className="home-page">
       {/* Welcome Section */}
@@ -20,7 +27,7 @@ function HomePage() {
         <h2>Choose Your Game Mode</h2>
         <div className="actions-grid">
           {/* Online Matchmaking */}
-          <Link to={user ? "/matchmaking" : "/login"} className="action-card action-matchmaking">
+          <Link to="/login" className="action-card action-matchmaking">
             <div className="action-icon">🌐</div>
             <h3>Ranked Match</h3>
             <p>Find opponent with similar ELO</p>
@@ -41,26 +48,6 @@ function HomePage() {
           </Link>
         </div>
       </div>
-
-      {/* Social Features */}
-      {user && (
-        <div className="quick-actions">
-          <h2>Social Features</h2>
-          <div className="actions-grid">
-            <Link to="/friends" className="action-card action-friends">
-              <div className="action-icon">👥</div>
-              <h3>Friends</h3>
-              <p>Manage friends and requests</p>
-            </Link>
-
-            <Link to="/rooms" className="action-card action-rooms">
-              <div className="action-icon">🏠</div>
-              <h3>Private Rooms</h3>
-              <p>Create or join game rooms</p>
-            </Link>
-          </div>
-        </div>
-      )}
 
       {/* Features Section */}
       <div className="features-section">
@@ -127,16 +114,14 @@ function HomePage() {
       </div>
 
       {/* Call to Action */}
-      {!user && (
-        <div className="cta-section">
-          <h2>Ready to Play?</h2>
-          <p>Join thousands of players and start your journey to the top!</p>
-          <div className="cta-buttons">
-            <Link to="/login" className="btn btn-primary">Login Now</Link>
-            <Link to="/register" className="btn btn-secondary">Create Account</Link>
-          </div>
+      <div className="cta-section">
+        <h2>Ready to Play?</h2>
+        <p>Join thousands of players and start your journey to the top!</p>
+        <div className="cta-buttons">
+          <Link to="/login" className="btn btn-primary">Login Now</Link>
+          <Link to="/register" className="btn btn-secondary">Create Account</Link>
         </div>
-      )}
+      </div>
     </div>
   );
 }

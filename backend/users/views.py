@@ -526,15 +526,22 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
         """
         Get filtered and sorted queryset for leaderboard.
         
-        Filters:
-            - All active users (including those with no games played)
+        Sorting (Chess standard):
+            1. Rated players (played games) ALWAYS rank higher than unrated
+            2. Among rated players:
+               - ELO rating (descending)
+               - Win rate (descending) 
+               - Total wins (descending)
+               - User ID (ascending - for stable ordering)
+            3. Among unrated players:
+               - User ID (ascending)
         
         Query Parameters:
             - filter: 'all', 'week', 'month' (only 'all' implemented)
             - limit: Number of results (default: 50)
         
         Returns:
-            QuerySet: Ordered by ELO rating (descending), limited
+            QuerySet: Ordered by multiple criteria, limited
             
         TODO:
             Implement time-based filters:
@@ -542,18 +549,36 @@ class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
             - 'month': Games played in last 30 days
             This requires tracking game timestamps and recalculating stats
         """
+        from django.db.models import Case, When, F, FloatField, IntegerField, Q
+        from django.db.models.functions import Cast
+        
         queryset = User.objects.filter(
-            is_active=True  # Show all active users
-        ).order_by('-elo_rating')
+            is_active=True
+        ).annotate(
+            # Calculate total games played
+            total_games=F('wins') + F('losses'),
+            # Flag for rated vs unrated (0 = unrated, 1 = rated)
+            is_rated=Case(
+                When(Q(wins=0) & Q(losses=0), then=0),
+                default=1,
+                output_field=IntegerField()
+            ),
+            # Calculate win_rate for tie-breaking
+            calculated_win_rate=Case(
+                When(Q(wins=0) & Q(losses=0), then=0.0),
+                default=Cast(F('wins'), FloatField()) / (Cast(F('wins'), FloatField()) + Cast(F('losses'), FloatField())) * 100,
+                output_field=FloatField()
+            )
+        ).order_by(
+            '-is_rated',             # Primary: Rated players first
+            '-elo_rating',           # Secondary: ELO descending (for rated)
+            '-calculated_win_rate',  # Tie-breaker 1: Win rate descending
+            '-wins',                 # Tie-breaker 2: Total wins descending
+            'id'                     # Tie-breaker 3: ID ascending (stable)
+        )
         
         filter_type = self.request.query_params.get('filter', 'all')
         limit = int(self.request.query_params.get('limit', 50))
-        
-        # TODO: Implement time-based filtering for 'week' and 'month'
-        # This would require:
-        # 1. Add 'last_game_date' field to User model
-        # 2. Update field after each game
-        # 3. Filter by date range here
         
         return queryset[:limit]
 

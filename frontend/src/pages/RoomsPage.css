@@ -382,6 +382,211 @@
   color: #666;
 }
 
+/* Dark Mode Styles */
+[data-theme='dark'] .rooms-page h1 {
+  color: #e0e0e0;
+  text-shadow: 0 0 10px rgba(139, 158, 255, 0.3);
+}
+
+[data-theme='dark'] .message.error {
+  background-color: rgba(220, 53, 69, 0.15);
+  color: #ff6b6b;
+  border-color: rgba(220, 53, 69, 0.3);
+}
+
+[data-theme='dark'] .message.success {
+  background-color: rgba(40, 167, 69, 0.15);
+  color: #51cf66;
+  border-color: rgba(40, 167, 69, 0.3);
+}
+
+/* Dark Mode Tabs */
+[data-theme='dark'] .tabs {
+  border-bottom-color: rgba(139, 158, 255, 0.2);
+}
+
+[data-theme='dark'] .tabs button {
+  color: #a0a0a0;
+}
+
+[data-theme='dark'] .tabs button:hover {
+  color: #e0e0e0;
+  background-color: rgba(139, 158, 255, 0.1);
+}
+
+[data-theme='dark'] .tabs button.active {
+  color: #51cf66;
+  border-bottom-color: #51cf66;
+  text-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+}
+
+/* Dark Mode Cards */
+[data-theme='dark'] .room-card,
+[data-theme='dark'] .invitation-card,
+[data-theme='dark'] .create-room-form,
+[data-theme='dark'] .join-room-form {
+  background: rgba(30, 30, 46, 0.8);
+  border: 1px solid rgba(139, 158, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3),
+              0 0 20px rgba(139, 158, 255, 0.05);
+}
+
+[data-theme='dark'] .room-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4),
+              0 0 30px rgba(139, 158, 255, 0.15);
+  border-color: rgba(139, 158, 255, 0.4);
+}
+
+[data-theme='dark'] .room-header h3,
+[data-theme='dark'] .invitation-info h3,
+[data-theme='dark'] .create-room-form h2,
+[data-theme='dark'] .join-room-form h2 {
+  color: #e0e0e0;
+}
+
+/* Dark Mode Room Status Badges */
+[data-theme='dark'] .room-status.waiting {
+  background-color: rgba(255, 193, 7, 0.2);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.2);
+}
+
+[data-theme='dark'] .room-status.ready {
+  background-color: rgba(40, 167, 69, 0.2);
+  color: #51cf66;
+  border: 1px solid rgba(40, 167, 69, 0.3);
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.2);
+}
+
+[data-theme='dark'] .room-status.active {
+  background-color: rgba(3, 169, 244, 0.2);
+  color: #4fc3f7;
+  border: 1px solid rgba(3, 169, 244, 0.3);
+  box-shadow: 0 0 10px rgba(3, 169, 244, 0.2);
+}
+
+/* Dark Mode Room Info */
+[data-theme='dark'] .room-info {
+  border-top-color: rgba(139, 158, 255, 0.15);
+  border-bottom-color: rgba(139, 158, 255, 0.15);
+}
+
+[data-theme='dark'] .room-info p,
+[data-theme='dark'] .invitation-info p {
+  color: #a0a0a0;
+}
+
+[data-theme='dark'] .room-info code {
+  background-color: rgba(30, 30, 46, 0.8);
+  color: #8b9eff;
+  border: 1px solid rgba(139, 158, 255, 0.2);
+}
+
+[data-theme='dark'] .participant {
+  color: #e0e0e0;
+}
+
+[data-theme='dark'] .ready-badge {
+  background-color: rgba(40, 167, 69, 0.8);
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
+}
+
+[data-theme='dark'] .invitation-message {
+  color: #51cf66;
+}
+
+[data-theme='dark'] .invitation-date {
+  color: #666;
+}
+
+/* Dark Mode Forms */
+[data-theme='dark'] .form-group label {
+  color: #e0e0e0;
+}
+
+[data-theme='dark'] .form-group input[type="text"] {
+  background-color: rgba(30, 30, 46, 0.6);
+  border-color: rgba(139, 158, 255, 0.2);
+  color: #e0e0e0;
+}
+
+[data-theme='dark'] .form-group input[type="text"]:focus {
+  border-color: #51cf66;
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
+}
+
+[data-theme='dark'] .form-group input[type="text"]::placeholder {
+  color: #666;
+}
+
+[data-theme='dark'] .form-group.checkbox input[type="checkbox"] {
+  accent-color: #51cf66;
+}
+
+/* Dark Mode Buttons */
+[data-theme='dark'] .btn-enter {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+[data-theme='dark'] .btn-enter:hover {
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme='dark'] .btn-copy {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+}
+
+[data-theme='dark'] .btn-copy:hover {
+  box-shadow: 0 6px 20px rgba(23, 162, 184, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme='dark'] .btn-create,
+[data-theme='dark'] .btn-join {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+[data-theme='dark'] .btn-create:hover,
+[data-theme='dark'] .btn-join:hover {
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme='dark'] .btn-accept {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+[data-theme='dark'] .btn-accept:hover {
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme='dark'] .btn-reject {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+[data-theme='dark'] .btn-reject:hover {
+  box-shadow: 0 6px 20px rgba(220, 53, 69, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Dark Mode Empty & Loading States */
+[data-theme='dark'] .empty-state {
+  color: #666;
+}
+
+[data-theme='dark'] .rooms-page.loading {
+  color: #a0a0a0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .create-join-section {

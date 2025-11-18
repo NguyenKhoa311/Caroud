@@ -388,10 +388,12 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
 }
 
 .link-info {
   flex: 1;
+  min-width: 0; /* Allow text to truncate */
 }
 
 .link-url {
@@ -413,17 +415,20 @@
 .link-actions {
   display: flex;
   gap: 8px;
+  flex-shrink: 0; /* Prevent buttons from shrinking */
+  align-items: center;
 }
 
 .btn-copy,
 .btn-deactivate {
-  padding: 8px 16px;
+  padding: 10px 18px;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
+  white-space: nowrap; /* Prevent text wrapping */
 }
 
 .btn-copy {
@@ -458,6 +463,224 @@
   padding: 100px 20px;
   font-size: 18px;
   color: #666;
+}
+
+/* Dark Mode Styles */
+[data-theme='dark'] .friends-page h1 {
+  color: #e0e0e0;
+  text-shadow: 0 0 10px rgba(139, 158, 255, 0.3);
+}
+
+[data-theme='dark'] .message.error {
+  background-color: rgba(220, 53, 69, 0.15);
+  color: #ff6b6b;
+  border-color: rgba(220, 53, 69, 0.3);
+}
+
+[data-theme='dark'] .message.success {
+  background-color: rgba(40, 167, 69, 0.15);
+  color: #51cf66;
+  border-color: rgba(40, 167, 69, 0.3);
+}
+
+/* Dark Mode Tabs */
+[data-theme='dark'] .tabs {
+  border-bottom-color: rgba(139, 158, 255, 0.2);
+}
+
+[data-theme='dark'] .tabs button {
+  color: #a0a0a0;
+}
+
+[data-theme='dark'] .tabs button:hover {
+  color: #e0e0e0;
+  background-color: rgba(139, 158, 255, 0.1);
+}
+
+[data-theme='dark'] .tabs button.active {
+  color: #8b9eff;
+  border-bottom-color: #8b9eff;
+  text-shadow: 0 0 10px rgba(139, 158, 255, 0.5);
+}
+
+/* Dark Mode Cards */
+[data-theme='dark'] .friend-card,
+[data-theme='dark'] .request-card,
+[data-theme='dark'] .user-card,
+[data-theme='dark'] .link-card,
+[data-theme='dark'] .invitation-card {
+  background: rgba(30, 30, 46, 0.8);
+  border: 1px solid rgba(139, 158, 255, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3),
+              0 0 20px rgba(139, 158, 255, 0.05);
+}
+
+[data-theme='dark'] .friend-card:hover,
+[data-theme='dark'] .user-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4),
+              0 0 30px rgba(139, 158, 255, 0.15);
+  border-color: rgba(139, 158, 255, 0.4);
+}
+
+[data-theme='dark'] .friend-header h3,
+[data-theme='dark'] .request-info h3,
+[data-theme='dark'] .user-card h3 {
+  color: #e0e0e0;
+}
+
+[data-theme='dark'] .friend-source {
+  background-color: rgba(25, 118, 210, 0.2);
+  color: #64b5f6;
+  border: 1px solid rgba(25, 118, 210, 0.3);
+}
+
+[data-theme='dark'] .friend-stats,
+[data-theme='dark'] .user-stats {
+  border-top-color: rgba(139, 158, 255, 0.15);
+  border-bottom-color: rgba(139, 158, 255, 0.15);
+}
+
+[data-theme='dark'] .friend-stats p,
+[data-theme='dark'] .user-stats p,
+[data-theme='dark'] .friend-date,
+[data-theme='dark'] .request-date,
+[data-theme='dark'] .invitation-date {
+  color: #a0a0a0;
+}
+
+[data-theme='dark'] .request-message,
+[data-theme='dark'] .invitation-info p {
+  color: #b0b0b0;
+}
+
+/* Dark Mode Status Badges */
+[data-theme='dark'] .status-badge.pending {
+  background-color: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+[data-theme='dark'] .status-badge.received {
+  background-color: rgba(3, 169, 244, 0.15);
+  color: #4fc3f7;
+  border-color: rgba(3, 169, 244, 0.3);
+}
+
+[data-theme='dark'] .ready-badge {
+  background-color: rgba(40, 167, 69, 0.8);
+  box-shadow: 0 0 10px rgba(40, 167, 69, 0.3);
+}
+
+/* Dark Mode Forms */
+[data-theme='dark'] .search-form .search-input,
+[data-theme='dark'] .create-room-form input[type="text"],
+[data-theme='dark'] .join-room-form input[type="text"] {
+  background-color: rgba(30, 30, 46, 0.6);
+  border-color: rgba(139, 158, 255, 0.2);
+  color: #e0e0e0;
+}
+
+[data-theme='dark'] .search-form .search-input:focus {
+  border-color: #8b9eff;
+  box-shadow: 0 0 10px rgba(139, 158, 255, 0.3);
+}
+
+[data-theme='dark'] .search-form .search-input::placeholder {
+  color: #666;
+}
+
+/* Dark Mode Buttons */
+[data-theme='dark'] .btn-search,
+[data-theme='dark'] .btn-add-friend,
+[data-theme='dark'] .btn-enter {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+[data-theme='dark'] .btn-search:hover,
+[data-theme='dark'] .btn-add-friend:hover,
+[data-theme='dark'] .btn-enter:hover {
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme='dark'] .btn-accept {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+[data-theme='dark'] .btn-accept:hover {
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme='dark'] .btn-reject,
+[data-theme='dark'] .btn-cancel,
+[data-theme='dark'] .btn-cancel-request {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+[data-theme='dark'] .btn-reject:hover,
+[data-theme='dark'] .btn-cancel:hover,
+[data-theme='dark'] .btn-cancel-request:hover {
+  box-shadow: 0 6px 20px rgba(220, 53, 69, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme='dark'] .btn-copy {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  box-shadow: 0 4px 15px rgba(23, 162, 184, 0.3);
+}
+
+[data-theme='dark'] .btn-copy:hover {
+  box-shadow: 0 6px 20px rgba(23, 162, 184, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme='dark'] .btn-create-link {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+}
+
+[data-theme='dark'] .btn-create-link:hover {
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.5);
+  transform: translateY(-2px);
+}
+
+[data-theme='dark'] .btn-deactivate {
+  background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+  box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+}
+
+[data-theme='dark'] .btn-deactivate:hover {
+  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Dark Mode Link Info */
+[data-theme='dark'] .link-url {
+  background-color: rgba(30, 30, 46, 0.8);
+  color: #8b9eff;
+  border: 1px solid rgba(139, 158, 255, 0.2);
+}
+
+[data-theme='dark'] .link-stats {
+  color: #a0a0a0;
+}
+
+[data-theme='dark'] .link-info .invitation-info h3 {
+  color: #e0e0e0;
+}
+
+/* Dark Mode Empty & Loading States */
+[data-theme='dark'] .empty-state {
+  color: #666;
+}
+
+[data-theme='dark'] .friends-page.loading {
+  color: #a0a0a0;
 }
 
 /* Responsive */

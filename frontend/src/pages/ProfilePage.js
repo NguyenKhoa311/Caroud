@@ -41,37 +41,41 @@ function ProfilePage() {
         return;
       }
 
-      // Fetch user stats from API
+      // !!! THAY THẾ '/api/your-aws-lambda-endpoint' BẰNG URL CỦA BẠN !!!
+      const AWS_API_ENDPOINT = 'https://maqj70s38d.execute-api.ap-southeast-1.amazonaws.com/dev';
+
+      // --- THAY ĐỔI CHO STATS ---
       try {
-        const statsResponse = await api.get(`/api/users/${authUser.id}/stats/`);
+        const statsPayload = {
+          action: 'getUserStats',
+          payload: {
+            userId: authUser.id 
+          }
+        };
+        // Sử dụng POST (hoặc GET nếu bạn cấu hình API Gateway cho phép)
+        const statsResponse = await api.post(AWS_API_ENDPOINT, statsPayload);
         setStats(statsResponse.data);
       } catch (err) {
-        console.error('Error fetching stats:', err);
-        // Use default stats if API fails
-        setStats({
-          elo_rating: authUser.elo_rating || 1200,
-          rank: '---',
-          total_games: authUser.total_games || 0,
-          wins: authUser.wins || 0,
-          losses: authUser.losses || 0,
-          win_rate: authUser.win_rate || 0,
-          current_streak: authUser.current_streak || 0,
-          best_streak: authUser.best_streak || 0,
-        });
+        // ... giữ nguyên phần xử lý lỗi stats ...
       }
 
-      // Fetch match history
+      // --- THAY ĐỔI CHO MATCH HISTORY ---
       try {
-        const historyResponse = await api.get(`/api/users/${authUser.id}/matches/?limit=10`);
+        const historyPayload = {
+          action: 'getMatchHistory',
+          payload: {
+            userId: authUser.id,
+            limit: 10
+          }
+        };
+        const historyResponse = await api.post(AWS_API_ENDPOINT, historyPayload);
         setMatchHistory(historyResponse.data || []);
       } catch (err) {
-        console.error('Error fetching match history:', err);
-        setMatchHistory([]);
+        // ... giữ nguyên phần xử lý lỗi match history ...
       }
 
     } catch (error) {
-      console.error('Error fetching user data:', error);
-      setError('Failed to load profile data');
+      // ...
     } finally {
       setLoading(false);
     }
@@ -111,7 +115,7 @@ function ProfilePage() {
     setEditSuccess(false);
 
     try {
-      // Validate username
+      // Validate username (giữ nguyên)
       if (editForm.username.trim().length < 3) {
         setEditError('Username must be at least 3 characters long');
         setSaving(false);
@@ -124,20 +128,54 @@ function ProfilePage() {
         return;
       }
 
-      // Call API to update profile
+      // --- THAY ĐỔI BẮT ĐẦU TỪ ĐÂY ---
+
+      // 1. Chuẩn bị payload cho Lambda
+      // Trong ProfilePage.js, hàm handleSaveProfile...
+
+      // 1. Chuẩn bị payload cho Lambda
+      const lambdaPayload = {
+        action: 'updateProfile',
+        payload: {
+          userId: authUser.id, // <-- THÊM DÒNG NÀY
+          username: editForm.username.trim(),
+          email: editForm.email.trim()
+        }
+      };
+      
+// ... phần còn lại giữ nguyên
+
+      // 2. Gọi đến endpoint AWS API Gateway của bạn
+      // !!! THAY THẾ '/api/your-aws-lambda-endpoint' BẰNG URL CỦA BẠN !!!
+      // ... trong hàm handleSaveProfile ...
+const response = await api.post(
+  'https://maqj70s38d.execute-api.ap-southeast-1.amazonaws.com/dev', 
+  lambdaPayload
+);
+
+// ... các lệnh gọi khác cũng phải dùng URL đầy đủ ...
+
+      // --- KẾT THÚC THAY ĐỔI ---
+
+      /*
+      // Code cũ:
       const response = await api.put('/api/users/update_profile/', {
         username: editForm.username.trim(),
         email: editForm.email.trim()
       });
+      */
 
       if (response.data) {
         setEditSuccess(true);
         setIsEditing(false);
         
-        // Refresh auth to get updated user data
-        await refreshAuth();
+        // Refresh auth để lấy dữ liệu user mới
+        // await refreshAuth();
+        await fetchUserData();
         
-        // Show success message
+        // Tải lại stats sau khi refresh auth (tùy chọn)
+        // await fetchUserData(); // Có thể không cần nếu refreshAuth đã cập nhật authUser
+        
         setTimeout(() => {
           setEditSuccess(false);
         }, 3000);
@@ -145,8 +183,12 @@ function ProfilePage() {
     } catch (error) {
       console.error('Error updating profile:', error);
       
+      // PHẦN NÀY RẤT QUAN TRỌNG:
+      // Hàm Lambda của bạn PHẢI trả về lỗi có cấu trúc
+      // giống như API cũ (ví dụ: { "username": ["Tên đã tồn tại"] })
+      // để code xử lý lỗi bên dưới hoạt động.
+      
       if (error.response?.data) {
-        // Handle validation errors from backend
         const errors = error.response.data;
         if (errors.username) {
           setEditError(errors.username[0]);

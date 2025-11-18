@@ -307,6 +307,24 @@ class GameConsumer(AsyncWebsocketConsumer):
                 await self.handle_player_disconnect(self.user_id)
             else:
                 logger.warning(f"🔴 No user_id found for leave_game message")
+        
+        elif message_type == 'timeout':
+            # Player ran out of time - handle timeout
+            player = data.get('player')
+            logger.info(f"⏰ Timeout received for player {player}")
+            
+            result = await database_sync_to_async(self.handle_timeout_in_db)(player)
+            
+            # Broadcast timeout to room
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'game_timeout',
+                    'player': player,
+                    'result': result.get('result') if result else None,
+                    'elo_changes': result.get('elo_changes') if result else None
+                }
+            )
 
     async def game_move(self, event):
         """
@@ -318,6 +336,17 @@ class GameConsumer(AsyncWebsocketConsumer):
             'col': event['col'],
             'player': event['player'],
             'result': event['result']
+        }))
+    
+    async def game_timeout(self, event):
+        """
+        Send timeout notification to WebSocket
+        """
+        await self.send(text_data=json.dumps({
+            'type': 'timeout',
+            'player': event['player'],
+            'result': event['result'],
+            'elo_changes': event['elo_changes']
         }))
     
     async def player_connected(self, event):
@@ -457,3 +486,113 @@ class GameConsumer(AsyncWebsocketConsumer):
             
         except Exception as e:
             return {'status': 'error', 'message': str(e)}
+    
+    def handle_timeout_in_db(self, player):
+        """
+        Handle player timeout - opposite player wins
+        """
+        try:
+            match = Match.objects.get(id=self.game_id)
+            
+            # Determine winner (opposite of timed-out player)
+            if player == 'X':
+                result = 'white_win'  # Black timed out, white wins
+            else:
+                result = 'black_win'  # White timed out, black wins
+            
+            # Store old ranks before finishing game
+            old_ranks = {}
+            if match.mode == 'online' and match.black_player and match.white_player:
+                old_ranks['black'] = match.black_player.get_leaderboard_rank()
+                old_ranks['white'] = match.white_player.get_leaderboard_rank()
+            
+            # Finish game with result
+            match.finish_game(result)
+            
+            response = {
+                'result': result,
+                'status': 'game_over'
+            }
+            
+            # Add ELO changes for online matches
+            if match.mode == 'online' and match.black_player and match.white_player:
+                response['elo_changes'] = {
+                    'black_player': {
+                        'user_id': match.black_player.id,
+                        'username': match.black_player.username,
+                        'old_elo': match.black_elo_before,
+                        'new_elo': match.black_player.elo_rating,
+                        'change': match.black_elo_change,
+                        'old_rank': old_ranks['black'],
+                        'new_rank': match.black_player.get_leaderboard_rank()
+                    },
+                    'white_player': {
+                        'user_id': match.white_player.id,
+                        'username': match.white_player.username,
+                        'old_elo': match.white_elo_before,
+                        'new_elo': match.white_player.elo_rating,
+                        'change': match.white_elo_change,
+                        'old_rank': old_ranks['white'],
+                        'new_rank': match.white_player.get_leaderboard_rank()
+                    }
+                }
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error handling timeout: {str(e)}")
+            return {'status': 'error', 'message': str(e)}
+
+
+    def handle_timeout_in_db(self, player):
+        """
+        Handle player timeout - opposite player wins
+        """
+        try:
+            match = Match.objects.get(id=self.game_id)
+            
+            # Store old ranks before finishing game
+            old_ranks = {}
+            if match.mode == 'online' and match.black_player and match.white_player:
+                old_ranks['black'] = match.black_player.get_leaderboard_rank()
+                old_ranks['white'] = match.white_player.get_leaderboard_rank()
+            
+            # Determine winner (opposite of timed-out player)
+            result = 'white_win' if player == 'X' else 'black_win'
+            match.finish_game(result)
+            
+            logger.info(f"⏰ Game {self.game_id} ended by timeout. Player {player} timed out. Result: {result}")
+            
+            response = {
+                'result': result
+            }
+            
+            # Add ELO changes for online matches
+            if match.mode == 'online' and match.black_player and match.white_player:
+                response['elo_changes'] = {
+                    'black_player': {
+                        'user_id': match.black_player.id,
+                        'username': match.black_player.username,
+                        'old_elo': match.black_elo_before,
+                        'new_elo': match.black_player.elo_rating,
+                        'change': match.black_elo_change,
+                        'old_rank': old_ranks['black'],
+                        'new_rank': match.black_player.get_leaderboard_rank()
+                    },
+                    'white_player': {
+                        'user_id': match.white_player.id,
+                        'username': match.white_player.username,
+                        'old_elo': match.white_elo_before,
+                        'new_elo': match.white_player.elo_rating,
+                        'change': match.white_elo_change,
+                        'old_rank': old_ranks['white'],
+                        'new_rank': match.white_player.get_leaderboard_rank()
+                    }
+                }
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Error handling timeout: {str(e)}")
+            return {'result': None}
+
