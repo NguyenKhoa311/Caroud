@@ -1,3 +1,6 @@
+:root{
+  --navbar-height: 84px; /* sửa nếu navbar thực tế cao hơn (ví dụ 72px) */
+}
 .App {
   min-height: 100vh;
   display: flex;
@@ -5,6 +8,50 @@
   background: var(--bg-primary);
   color: var(--text-primary);
   transition: background-color 0.3s ease, color 0.3s ease;
+  position: relative;
+}
+
+/* Fixed background image - appears below navbar */
+.App::before {
+  content: '';
+  position: fixed;
+  
+  
+  top: var(--navbar-height); 
+  left: 0;
+  width: 100%;
+  height: calc(100% - 84px); /* Trừ đi chiều cao navbar */
+  background-image: url('rosi4.png');
+  background-size: cover;
+  background-position: center var(--navbar-height);
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  opacity: 0.9; /* Tăng độ rõ từ 0.07 lên 0.25 */
+  z-index: 0; /* Nằm dưới tất cả nội dung */
+  pointer-events: none; /* Không chặn tương tác với các element khác */
+}
+
+/* Dark theme - có thể dùng ảnh khác hoặc điều chỉnh opacity */
+[data-theme='dark'] .App::before {
+  opacity: 0.5; /* Tăng từ 0.1 lên 0.2 cho dark mode */
+  background-image: url('rosi2.png');
+  /*background-size: 85% auto; 
+  background-position: center top; */
+
+  /* Bao trọn toàn chiều ngang, không méo */
+  background-size: cover;
+
+  /* Ảnh bắt đầu từ dưới navbar 84px */
+  background-position: center var(--navbar-height);
+
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* Đảm bảo tất cả nội dung nằm trêsn ảnh nền */
+.App > * {
+  position: relative;
+  z-index: 1;
 }
 
 .container {

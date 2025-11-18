@@ -1,4 +1,5 @@
 .navbar {
+  height: var(--navbar-height);
   background: var(--navbar-bg);
   backdrop-filter: blur(10px);
   box-shadow: var(--card-shadow);
