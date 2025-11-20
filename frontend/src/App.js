@@ -21,6 +21,7 @@ import FriendsPage from "./pages/FriendsPage";
 import RoomsPage from "./pages/RoomsPage";
 import RoomLobby from "./pages/RoomLobby";
 import MatchmakingPage from "./pages/MatchmakingPage";
+import InviteAccept from "./pages/InviteAccept";
 
 // ----------------------------------------------------------------
 
@@ -77,6 +78,9 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+
+              {/* Friend invite link - public route (redirects to login if not authenticated) */}
+              <Route path="/invite/accept/:token" element={<InviteAccept />} />
 
               <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
               <Route path="/game/:mode" element={<PrivateRoute><GamePage /></PrivateRoute>} />

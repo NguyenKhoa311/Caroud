@@ -168,19 +168,29 @@ const response = await api.post(
       */
 
       if (response.data) {
-        setEditSuccess(true);
-        setIsEditing(false);
+        // Update sessionStorage với user data mới
+        const updatedUser = {
+          ...authUser,
+          username: response.data.username,
+          email: response.data.email
+        };
         
-        // Refresh auth để lấy dữ liệu user mới
-        // await refreshAuth();
+        // Update auth type tương ứng
+        if (authUser.authType === 'token') {
+          sessionStorage.setItem('user', JSON.stringify(updatedUser));
+        } else if (authUser.authType === 'cognito') {
+          sessionStorage.setItem('cognito_user', JSON.stringify(updatedUser));
+        }
+        
+        // Refresh auth context để load data mới từ sessionStorage
+        await refreshAuth();
+        
+        // Reload user data (stats, match history)
         await fetchUserData();
         
-        // Tải lại stats sau khi refresh auth (tùy chọn)
-        // await fetchUserData(); // Có thể không cần nếu refreshAuth đã cập nhật authUser
-        
-        setTimeout(() => {
-          setEditSuccess(false);
-        }, 3000);
+        setEditSuccess(true);
+        setIsEditing(false);
+        setTimeout(() => setEditSuccess(false), 3000);
       }
     } catch (error) {
       console.error('Error updating profile:', error);

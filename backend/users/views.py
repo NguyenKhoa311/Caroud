@@ -1442,6 +1442,34 @@ class RoomInvitationViewSet(viewsets.ModelViewSet):
             'room', 'from_user', 'to_user'
         ).order_by('-created_at')
     
+    def create(self, request, *args, **kwargs):
+        """
+        Send a room invitation.
+        
+        POST /api/users/rooms/invitations/
+        {
+            "room_id": 1,
+            "to_user_id": 2,
+            "message": "Join my game!"
+        }
+        
+        Returns:
+            201: Invitation sent successfully
+            400: Validation error
+        """
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            {
+                'message': 'Invitation sent successfully!',
+                'invitation': serializer.data
+            },
+            status=status.HTTP_201_CREATED,
+            headers=headers
+        )
+    
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         """
